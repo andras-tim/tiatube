@@ -101,6 +101,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <script src="vendor/js/bootstrap.min.js"></script>
 
     <!-- Main JavaScripts -->
+    <script src="js/config.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

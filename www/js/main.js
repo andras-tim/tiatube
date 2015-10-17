@@ -3,6 +3,8 @@
  */
 function main()
 {
+    var config = getConfig();
+
     /*
      * Download
      */
@@ -110,7 +112,7 @@ function main()
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
         })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-        ga('create','UA-30855365-1', 'dras.hu');
+        ga('create', config.googleAnalytics.id, config.googleAnalytics.site);
         ga('send', 'pageview');
     }
 
@@ -125,11 +127,11 @@ function main()
         initialize_panels();
         initialize_event_handlers();
 
-        if ("file:" != document.location.protocol)
+        if (config.googleAnalytics.id && config.googleAnalytics.site && document.location.protocol !== "file:")
         {
             initialize_google_analytics();
         }
-    }
+    };
 
     return this;
 }
