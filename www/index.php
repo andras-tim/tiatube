@@ -19,6 +19,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="tiaTube" />
     <meta name="author" content="Andras Tim" />
+    <meta name="source" content="https://github.com/andras-tim/tiatube" />
 
     <!-- Fav and touch icons -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="ico/apple-touch-icon-144-precomposed.png" />
@@ -47,7 +48,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#"><img src="ico/apple-touch-icon-57-precomposed.png"> tiaTube</a>
+          <a class="navbar-brand" href="https://github.com/andras-tim/tiatube"><img src="ico/apple-touch-icon-57-precomposed.png"> tiaTube</a>
         </div>
       </div>
     </div>
