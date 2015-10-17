@@ -8,5 +8,5 @@ then
     cp "${DEFAULT_CONFIG}" "${CONFIG}"
 fi
 
-apt-get install -yqq ffmpeg libmp3lame0
+apt-get install ffmpeg libmp3lame0
 pip install --upgrade youtube_dl eyed3 iconv
