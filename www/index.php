@@ -32,7 +32,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <title>tiaTube</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="vendor/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -49,7 +49,9 @@ $welcome = $welcomes[array_rand($welcomes)];
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="https://github.com/andras-tim/tiatube"><img src="ico/apple-touch-icon-57-precomposed.png"> tiaTube</a>
+          <a class="navbar-brand" href="https://github.com/andras-tim/tiatube">
+            <span><img src="ico/apple-touch-icon-57-precomposed.png"></span> tiaTube
+          </a>
         </div>
       </div>
     </div>
@@ -79,6 +81,7 @@ $welcome = $welcomes[array_rand($welcomes)];
               </span>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -97,10 +100,10 @@ $welcome = $welcomes[array_rand($welcomes)];
     <!-- JavaScript Libraries
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="vendor/js/jquery-1.11.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 
     <!-- Bootstrap JavaScript -->
-    <script src="vendor/js/bootstrap.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
     <!-- Main JavaScripts -->
     <script src="js/config.js"></script>

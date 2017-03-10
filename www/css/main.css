@@ -3,6 +3,9 @@
 /*
  * Bootstrap customizations
  */
-.navbar-brand img {
+.navbar-inverse .navbar-brand {
+    color: #777;
+}
+.navbar-inverse .navbar-brand img {
     vertical-align: text-top;
 }
