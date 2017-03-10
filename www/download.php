@@ -56,7 +56,7 @@ function start_download()
         'done' => false,
         'home' => $home,
         'cmd' => sprintf(
-            '(%s %s; echo $? >%s) & echo $! >%s',
+            '(stdbuf -oL %s %s; echo $? >%s) & echo $! >%s',
             TIATUBE,
             escapeshellarg($video_id),
             $home . '/ret',

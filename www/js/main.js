@@ -67,7 +67,7 @@ function main() {
         downloadVideo = function downloadVideo(videoId, callback) {
             downloadTimer = setTimeout(function () {
                 downloadVideo(videoId, callback);
-            }, 2000);
+            }, 1000);
             updateVideoDownloadState(videoId, callback);
         },
 
