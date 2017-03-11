@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Updated external libs, and used CDN where is possible
 - Improved download cache handling
 
+### Fixed
+- Show proper message when error occurs
+
 
 ## 1.0.0 - 2015-10-17
 ### Added

@@ -332,7 +332,7 @@ try
     {
         if (isset($_GET['dl']))
         {
-            http_response_code(400);
+            http_response_code(405);
             exit(sprintf('Video does not yet downloaded'));
         }
         cleanup();

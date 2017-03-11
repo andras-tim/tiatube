@@ -3,7 +3,6 @@
  */
 function main() {
     var config = getConfig(),
-        downloadTimer,
 
         /**
          * Static UI elements
@@ -78,13 +77,6 @@ function main() {
         },
 
         downloadVideo = function downloadVideo(videoId, callback) {
-            downloadTimer = setTimeout(function () {
-                downloadVideo(videoId, callback);
-            }, 1000);
-            updateVideoDownloadState(videoId, callback);
-        },
-
-        updateVideoDownloadState = function updateVideoDownloadState(videoId, callback) {
             var htmlText,
                 url = 'download.php?v=' + encodeURIComponent(videoId);
 
@@ -94,8 +86,8 @@ function main() {
                 contentType: 'application/json'
             })
                 .fail(function (jqXHR, textStatus, errorThrown) {
-                    alert("Download error: " + textStatus);
-                    clearTimeout(downloadTimer);
+                    console.error(errorThrown, jqXHR.responseText);
+                    alert('Unhandled error: ' + jqXHR.responseText);
                     callback();
                 })
                 .done(function (data, textStatus, jqXHR) {
@@ -106,11 +98,16 @@ function main() {
                         window.scrollTo(0, document.body.scrollHeight);
                     }
                     if (data['done'] == true) {
-                        clearTimeout(downloadTimer);
                         if (data['ret'] == 0) {
                             window.location.assign(url + '&dl=1');
+                        } else {
+                            alert('Download error');
                         }
                         callback();
+                    } else {
+                        setTimeout(function () {
+                            downloadVideo(videoId, callback);
+                        }, 1000);
                     }
                 });
         },
