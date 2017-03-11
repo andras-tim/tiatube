@@ -37,6 +37,17 @@ function main() {
             });
         },
 
+        initializeVideoUrl = function initializeVideoUrl() {
+            videoInput.val(getVideoIdFromUrl());
+        },
+
+        getVideoIdFromUrl = function getVideoIdFromUrl() {
+            var hashSearch = $.deparam(window.location.hash.substring(1)),
+                videoId = hashSearch['v'];
+
+            return videoId === undefined ? '' : videoId;
+        },
+
         getVideoId = function getVideoId(videoIdOrUrl) {
             return videoIdOrUrl.replace(/^.*\/(|.*[?&]v=)([^&=]+)(|&.*)$/, "$2");
         },
@@ -44,6 +55,8 @@ function main() {
         initializeEventHandlers = function initializeEventHandlers() {
             var eventHandler = function () {
                 var videoId = getVideoId(videoInput.val());
+
+                window.location.hash = '#v=' + encodeURIComponent(videoId);
 
                 videoInput.val(videoId);
                 downloadButton.button('loading');
@@ -120,6 +133,7 @@ function main() {
      */
     this.initialize = function () {
         initializePanels();
+        initializeVideoUrl();
         initializeEventHandlers();
 
         if (config.googleAnalytics.id && config.googleAnalytics.site && window.location.protocol !== "file:") {

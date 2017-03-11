@@ -1,0 +1,12 @@
+{
+  "name": "tiatube",
+  "homepage": "https://github.com/andras-tim/tiatube",
+  "authors": [
+    "Andras Tim <andras.tim@gmail.com>"
+  ],
+  "description": "Minimal youtube-dl frontend",
+  "private": true,
+  "dependencies": {
+    "jquery-deparam": "^0.5.1"
+  }
+}
