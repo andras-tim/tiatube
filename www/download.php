@@ -81,11 +81,6 @@ function start_download()
     $_SESSION['pid'] = intval(file_get_contents($home . '/pid'));
 }
 
-function terminate_download()
-{
-    cleanup();
-}
-
 function stream_content()
 {
     $file = get_path_of_first_mp3($_SESSION['result_path']);
@@ -166,7 +161,7 @@ function get_command_by_pid($pid)
 
 function rm_r($dir)
 {
-    if (!is_dir($dir))
+    if (!is_dir($dir) || $dir === '')
     {
         return false;
     }
@@ -288,34 +283,67 @@ if (!function_exists('http_response_code'))
     }
 }
 
+function is_cache_valid($video_id)
+{
+    if (!isset($_SESSION['video']))
+    {
+        return false;
+    }
+
+    if ($_SESSION['video'] !== $video_id)
+    {
+        return false;
+    }
+
+    if (was_download_error())
+    {
+        return false;
+    }
+
+    if ($_SESSION['home'] === '' || !is_dir($_SESSION['home']))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+function was_download_error()
+{
+    return $_SESSION['done'] === true && $_SESSION['ret'] !== 0;
+}
+
+
 session_start();
 $video_id = get_parameter('v');
 validate_video_id($video_id);
 
 try
 {
-    if (isset($_SESSION['video']))
+    if (is_cache_valid($video_id))
     {
-        if ($_SESSION['video'] === $video_id)
+        if (isset($_GET['dl']))
         {
-            if (isset($_GET['dl']))
-            {
-                stream_content();
-                exit();
-            }
-        }
-        else
-        {
-            terminate_download();
-            start_download();
+            stream_content();
+            exit();
         }
     }
     else
     {
+        if (isset($_GET['dl']))
+        {
+            http_response_code(400);
+            exit(sprintf('Video does not yet downloaded'));
+        }
+        cleanup();
         start_download();
     }
 
     get_current_status();
+    if (was_download_error())
+    {
+        cleanup();
+    }
 }
 catch (Exception $e)
 {

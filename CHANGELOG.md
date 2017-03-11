@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - More fancy and responsive download status
 - Updated external libs, and used CDN where is possible
+- Improved download cache handling
 
 
 ## 1.0.0 - 2015-10-17
