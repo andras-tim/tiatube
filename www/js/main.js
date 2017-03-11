@@ -6,27 +6,34 @@ function main() {
         downloadTimer,
 
         /**
+         * Static UI elements
+         */
+        videoCollapse = $('#video-collapse'),
+        videoInput = $('#video-id'),
+        downloadButton = $('#start-download'),
+
+        downloadPanel = $('#download-panel'),
+        downloadCollapse = $('#download-collapse'),
+        downloadOutput = $('#download-output'),
+
+        /**
          * Download
          */
         initializePanels = function initializePanels() {
-            var videoPanel = $('#video-panel'),
-                download = $('#download'),
-                downloadPanel = $('#download-panel');
-
-            videoPanel.on('show.bs.collapse', function () {
-                downloadPanel.collapse('hide');
+            videoCollapse.on('show.bs.collapse', function () {
+                downloadCollapse.collapse('hide');
             });
 
-            videoPanel.on('hide.bs.collapse', function () {
-                //download.show();
-                downloadPanel.collapse('show');
+            videoCollapse.on('hide.bs.collapse', function () {
+                //downloadPanel.show();
+                downloadCollapse.collapse('show');
             });
 
-            downloadPanel.on('show.bs.collapse', function () {
-                download.show();
+            downloadCollapse.on('show.bs.collapse', function () {
+                downloadPanel.show();
             });
-            downloadPanel.on('hidden.bs.collapse', function () {
-                download.hide();
+            downloadCollapse.on('hidden.bs.collapse', function () {
+                downloadPanel.hide();
             });
         },
 
@@ -36,23 +43,21 @@ function main() {
 
         initializeEventHandlers = function initializeEventHandlers() {
             var eventHandler = function () {
-                var videoInput = $('#video-id'),
-                    downloadButton = $('#start-download'),
-                    videoId = getVideoId(videoInput.val());
+                var videoId = getVideoId(videoInput.val());
 
                 videoInput.val(videoId);
                 downloadButton.button('loading');
-                $('#download-output').text("");
-                $('#video-panel').collapse('hide');
+                downloadOutput.text("");
+                videoCollapse.collapse('hide');
 
                 downloadVideo(videoId, function () {
-                    //$('#video-panel').collapse('show');
+                    //videoCollapse.collapse('show');
                     downloadButton.button('reset')
                 });
             };
 
-            $('#start-download').click(eventHandler);
-            $('#video-id').keypress(function (e) {
+            downloadButton.click(eventHandler);
+            videoInput.keypress(function (e) {
                 if (e.keyCode === 13) {
                     eventHandler();
                 }
@@ -84,7 +89,7 @@ function main() {
                     if (data['status-tail'] != "") {
                         htmlText = String($('<div/>').text(data['status-tail']).html())
                             .replace(/\\n/g, "<br />");
-                        $('#download-output').append(htmlText);
+                        downloadOutput.append(htmlText);
                         window.scrollTo(0, document.body.scrollHeight);
                     }
                     if (data['done'] == true) {

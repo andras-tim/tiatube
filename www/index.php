@@ -67,11 +67,11 @@ $welcome = $welcomes[array_rand($welcomes)];
 
       <div class="panel panel-default">
         <div class="panel-heading">
-          <a data-toggle="collapse" data-parent="#accordion" href="#video-panel">
+          <a data-toggle="collapse" data-parent="#accordion" href="#video-collapse">
             <span class="panel-title">Videó</span>
           </a>
         </div>
-        <div class="panel-collapse collapse in" id="video-panel">
+        <div class="panel-collapse collapse in" id="video-collapse">
           <div class="panel-body">
 
             <div class="input-group">
@@ -86,11 +86,11 @@ $welcome = $welcomes[array_rand($welcomes)];
         </div>
       </div>
 
-      <div class="panel panel-info" id="download" style="display: none;">
+      <div class="panel panel-info" id="download-panel" style="display: none;">
         <div class="panel-heading">
           <span class="panel-title">Letöltés</span>
         </div>
-        <div id="download-panel" class="panel-collapse collapse">
+        <div id="download-collapse" class="panel-collapse collapse">
           <div class="panel-body">
             <code id="download-output"></code>
           </div>
