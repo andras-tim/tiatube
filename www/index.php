@@ -31,7 +31,7 @@ $welcome = $welcomes[array_rand($welcomes)];
 
     <title>tiaTube</title>
 
-    <!-- Bootstrap core CSS -->
+    <!-- vendor: Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -60,34 +60,35 @@ $welcome = $welcomes[array_rand($welcomes)];
 
       <!-- Main jumbotron for a primary marketing message or call to action -->
       <div class="jumbotron">
-        <h1><?php echo htmlspecialchars($welcome, NULL, 'UTF-8'); ?></h1>
+        <h1><?php echo htmlspecialchars($welcome, null, 'UTF-8'); ?></h1>
         <p>Ezzel az eszközzel könnyedén letöltheted kedvenc Youtube videóid hanganyagát MP3 formátumban, a lehető legjobb minőségben! Nem kell mást tenned, csak másold be a Youtube videód internet címét a lenti mezőbé, és kattints <kbd>Letöltés!</kbd> gombra!</p>
       </div>
 
 
       <div class="panel panel-default">
         <div class="panel-heading">
-          <a data-toggle="collapse" data-parent="#accordion" href="#video-panel"><big class="panel-title">Videó</big></a>
+          <a data-toggle="collapse" data-parent="#accordion" href="#video-panel">
+            <span class="panel-title">Videó</span>
+          </a>
         </div>
         <div class="panel-collapse collapse in" id="video-panel">
           <div class="panel-body">
+
             <div class="input-group">
               <span class="input-group-addon">youtube.com/watch?v=</span>
-              <input type="text" class="form-control" id="video-id" placeholder="videó URL, vagy azonosító">
+              <input type="text" class="form-control" id="video-id" placeholder="videó URL, vagy azonosító" autocomplete="off">
               <span class="input-group-btn">
-                <button type="button" class="btn btn-primary" id="start-download" data-loading-text="Letöltés...">
-                  Letöltés!
-                </button>
+                <button type="button" class="btn btn-primary" id="start-download" data-loading-text="Letöltés...">Letöltés!</button>
               </span>
             </div>
-          </div>
 
+          </div>
         </div>
       </div>
 
       <div class="panel panel-info" id="download" style="display: none;">
         <div class="panel-heading">
-          <big class="panel-title">Letöltés</big>
+          <span class="panel-title">Letöltés</span>
         </div>
         <div id="download-panel" class="panel-collapse collapse">
           <div class="panel-body">
@@ -100,12 +101,14 @@ $welcome = $welcomes[array_rand($welcomes)];
     <!-- JavaScript Libraries
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+
+    <!-- vendor: jQuery and libs -->
     <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 
-    <!-- Bootstrap JavaScript -->
+    <!-- vendor: Bootstrap -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
-    <!-- Main JavaScripts -->
+    <!-- Main -->
     <script src="js/config.js"></script>
     <script src="js/main.js"></script>
   </body>

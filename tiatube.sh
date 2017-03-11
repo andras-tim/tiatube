@@ -1,88 +1,102 @@
 #!/bin/bash
-TMPDIR="/tmp/tiatube_$(date '+%Y%m%d-%H%M%S')_$$"
+TMP_DIR="/tmp/tiatube_$(date '+%Y%m%d-%H%M%S')_$$"
+
 
 ######
 # FUNCTIONS
 #
 function quit()
 {
-    err=$1; shift
+    err="$1"; shift
 
-    [ -e "${TMPDIR}" ] && rm -rf "${TMPDIR}"
-    [ $# -gt 0 ] && echo "$@" >&2
-    exit $err
+    [[ -e "${TMP_DIR}" ]] && rm -rf "${TMP_DIR}"
+    [[ $# -gt 0 ]] && echo "$@" >&2
+    exit "${err}"
 }
 
-function YoutubeDl()
+function youtube_dl()
 {
     youtube-dl --ignore-config -r 4M --no-playlist --format best --audio-format mp3 --audio-quality 0 "$@"
 }
 
-function tagMp3()
+function tag_mp3()
 {
     eyeD3 --v2 --encoding=latin1 --no-config --no-color "$@"
 }
 
-function resizeImage()
+function resize_image()
 {
     local image="$1"
 
-    convert -resize 300x300 -gravity center -extent 300x300 -background black "${image}" "resized_${image}" || return $?
+    convert -resize 300x300 -gravity center -extent 300x300 -background black "${image}" "resized_${image}" \
+        || return $?
     mv "resized_${image}" "${image}"
 }
 
-function cleanupFilename()
+function cleanup_filename()
 {
-    cat - |
-        tr -d '\r\n' |
-        iconv -f utf-8 -t 'ascii//translit' |
-        tr '[:space:]' '_' |
-        tr -cd '[:print:]' |
-        sed -E 's>_+>_>g'
+    tr -d '\r\n' \
+        | iconv -f utf-8 -t 'ascii//translit' \
+            | tr '[:space:]' '_' \
+                | tr -cd '[:print:]' \
+                    | sed -E 's>_+>_>g'
 }
 
 function main()
 {
-    if [ $# -lt 1 ]; then
-        quit 1 "Missing YouTube Video URL/ID!"
+    if [[ $# -lt 1 ]]
+    then
+        quit 1 'Missing YouTube Video URL/ID!'
     fi
-    videoid="$1"
-    mkdir -p "${TMPDIR}" || quit $? "Can not create TEMP dir ${TMPDIR}"
-    cd "${TMPDIR}" || quit $? "Can not enter to TEMP dir ${TMPDIR}"
+    video_id="$1"
+
+    mkdir -p "${TMP_DIR}" \
+        || quit $? "Can not create TEMP dir ${TMP_DIR}"
+    cd "${TMP_DIR}" \
+        || quit $? "Can not enter to TEMP dir ${TMP_DIR}"
+
 
     echo '=== INFO ==='
-    YoutubeDl --list-formats -- "${videoid}" || quit $? "Can not get info about video ${videoid}"
+    youtube_dl --list-formats -- "${video_id}" \
+        || quit $? "Can not get info about video ${video_id}"
 
 
     echo -e '\n=== DOWNLOAD ==='
-    echo "Selected format: $(YoutubeDl --get-format -- "${videoid}")" || quit $? "Can not getting formats of video ${videoid}"
-    title="$(YoutubeDl -o '%(title)s [%(id)s]' --get-filename -- "${videoid}")" || quit $? "Can not getting title of video ${videoid}"
-    filename="$(echo "${title}" | cleanupFilename)" || quit $? "Can not getting filename of video ${videoid}"
+    echo "Selected format: $(youtube_dl --get-format -- "${video_id}")" \
+        || quit $? "Can not getting formats of video ${video_id}"
+    title="$(youtube_dl -o '%(title)s [%(id)s]' --get-filename -- "${video_id}")" \
+        || quit $? "Can not getting title of video ${video_id}"
+    filename="$(echo "${title}" | cleanup_filename)" \
+        || quit $? "Can not getting filename of video ${video_id}"
     echo -e "Filename: ${filename}\n"
 
-    YoutubeDl --extract-audio --write-thumbnail -o "${filename}.%(ext)s" -- "${videoid}" || quit $? "Can not download video ${videoid}"
+    youtube_dl --extract-audio --write-thumbnail -o "${filename}.%(ext)s" -- "${video_id}" \
+        || quit $? "Can not download video ${video_id}"
 
 
     echo -e '\n=== POST PROCESSING ==='
-    mp3name="${filename}.mp3"
-    imagename="${filename}.jpg"
+    mp3_name="${filename}.mp3"
+    image_name="${filename}.jpg"
 
-    echo "Resize image"
-    if [ -e "${imagename}" ]; then
-        resizeImage "${imagename}"
-        if [ -e "${mp3name}" ]; then
-            tagMp3  --artist='YouTube' --title="${title}" --add-image="${imagename}:FRONT_COVER" --user-url-frame=":http\\://www.youtube.com/watch?v=${videoid}" -- "${mp3name}" || quit $? "Can not set META info for video ${videoid}"
+    echo 'Resize image'
+    if [[ -e "${image_name}" ]]
+    then
+        resize_image "${image_name}"
+        if [[ -e "${mp3_name}" ]]
+        then
+            tag_mp3  --artist='YouTube' --title="${title}" --add-image="${image_name}:FRONT_COVER" --user-url-frame=":http\\://www.youtube.com/watch?v=${video_id}" -- "${mp3_name}" \
+                || quit $? "Can not set META info for video ${video_id}"
         else
-            echo "(skipped)"
+            echo '(skipped)'
         fi
-        rm -- "${imagename}"
+        rm -- "${image_name}"
     else
-        echo "(skipped)"
+        echo '(skipped)'
     fi
 
-    echo -e "\nDONE!"
+    echo -e '\nDONE!'
 }
 
 main "$@" >&2
-echo "${TMPDIR}"
+echo "${TMP_DIR}"
 exit 0
