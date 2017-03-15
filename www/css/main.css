@@ -9,3 +9,8 @@
 .navbar-inverse .navbar-brand img {
     vertical-align: text-top;
 }
+
+pre {
+    color: #bd4147;
+    background-color: #f7f7f9;
+}

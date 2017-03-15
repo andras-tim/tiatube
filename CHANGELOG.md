@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 ### Changed
+- More fancy and responsive download status
 - Updated external libs, and used CDN where is possible
 
 

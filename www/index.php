@@ -92,7 +92,7 @@ $welcome = $welcomes[array_rand($welcomes)];
         </div>
         <div id="download-collapse" class="panel-collapse collapse">
           <div class="panel-body">
-            <code id="download-output"></code>
+            <pre id="download-output"></pre>
           </div>
         </div>
       </div>
