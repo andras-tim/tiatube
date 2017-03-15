@@ -18,7 +18,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="tiaTube" />
-    <meta name="version" content="1.0.0" />
+    <meta name="version" content="1.1.0" />
     <meta name="author" content="Andras Tim" />
     <meta name="source" content="https://github.com/andras-tim/tiatube" />
 

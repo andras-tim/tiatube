@@ -4,6 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased][unreleased]
+
+
+## [1.1.0] - 2017-03-16
 ### Added
 - Auto focus on video ID field
 
@@ -23,4 +26,5 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Getting thumbnail for ID3 album art
 - Session based download cache
 
-[unreleased]: https://github.com/andras-tim/callrecord-renamer/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/andras-tim/callrecord-renamer/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/andras-tim/callrecord-renamer/compare/v1.0.0...v1.1.0
