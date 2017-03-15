@@ -1,4 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
+
 BASEDIR="$(dirname "$0")"
 CONFIG="${BASEDIR}/www/js/config.js"
 DEFAULT_CONFIG="${BASEDIR}/www/js/config.default.js"
