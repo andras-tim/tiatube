@@ -33,6 +33,7 @@ $welcome = $welcomes[array_rand($welcomes)];
 
     <!-- vendor: Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet"  href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -61,7 +62,7 @@ $welcome = $welcomes[array_rand($welcomes)];
       <!-- Main jumbotron for a primary marketing message or call to action -->
       <div class="jumbotron">
         <h1><?php echo htmlspecialchars($welcome, null, 'UTF-8'); ?></h1>
-        <p>Ezzel az eszközzel könnyedén letöltheted kedvenc Youtube videóid hanganyagát MP3 formátumban, a lehető legjobb minőségben! Nem kell mást tenned, csak másold be a Youtube videód internet címét a lenti mezőbé, és kattints <kbd>Letöltés!</kbd> gombra!</p>
+        <p>Ezzel az eszközzel könnyedén letöltheted kedvenc Youtube videóid hanganyagát MP3, vagy a komplett videót MP4 formátumben, a lehető legjobb minőségben! Nem kell mást tenned, csak másold be a Youtube videód internet címét a lenti mezőbé, és kattints valamelyik letöltés gombra!</p>
       </div>
 
 
@@ -78,7 +79,8 @@ $welcome = $welcomes[array_rand($welcomes)];
               <span class="input-group-addon">youtube.com/watch?v=</span>
               <input type="text" class="form-control" id="video-id" placeholder="videó URL, vagy azonosító" autocomplete="off" autofocus>
               <span class="input-group-btn">
-                <button type="button" class="btn btn-primary" id="start-download" data-loading-text="Letöltés...">Letöltés!</button>
+                <button type="button" class="btn btn-primary" id="start-download-audio" title="Hang letöltése"><i class="fa fa-music" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-success" id="start-download-video" title="Videó letöltése"><i class="fa fa-video-camera" aria-hidden="true"></i></button>
               </span>
             </div>
 
@@ -88,7 +90,11 @@ $welcome = $welcomes[array_rand($welcomes)];
 
       <div class="panel panel-info" id="download-panel" style="display: none;">
         <div class="panel-heading">
-          <span class="panel-title">Letöltés</span>
+          <span class="panel-title">
+            <span id="status-downloading-audio" class="hide">Hanganyag beszerzése és átalakítása...</span>
+            <span id="status-downloading-video" class="hide">Videó beszerzése...</span>
+            <span id="status-done">Kész</span>
+          </span>
         </div>
         <div id="download-collapse" class="panel-collapse collapse">
           <div class="panel-body">

@@ -9,9 +9,11 @@ function main() {
          */
         videoCollapse = $('#video-collapse'),
         videoInput = $('#video-id'),
-        downloadButton = $('#start-download'),
+        downloadAudioButton = $('#start-download-audio'),
+        downloadVideoButton = $('#start-download-video'),
 
         downloadPanel = $('#download-panel'),
+        stateDoneSpan = $('#status-done'),
         downloadCollapse = $('#download-collapse'),
         downloadOutput = $('#download-output'),
 
@@ -52,33 +54,39 @@ function main() {
         },
 
         initializeEventHandlers = function initializeEventHandlers() {
-            var eventHandler = function () {
-                var videoId = getVideoId(videoInput.val());
+            var getEventHandler = function (downloadFormat) {
+                return function () {
+                    var stateDownloadingSpan = $('#status-downloading-' + downloadFormat),
+                        videoId = getVideoId(videoInput.val());
 
-                window.location.hash = '#v=' + encodeURIComponent(videoId);
+                    window.location.hash = '#v=' + encodeURIComponent(videoId);
 
-                videoInput.val(videoId);
-                downloadButton.button('loading');
-                downloadOutput.text("");
-                videoCollapse.collapse('hide');
+                    videoInput.val(videoId);
+                    stateDownloadingSpan.removeClass('hide');
+                    stateDoneSpan.addClass('hide');
+                    videoCollapse.collapse('hide');
 
-                downloadVideo(videoId, function () {
-                    //videoCollapse.collapse('show');
-                    downloadButton.button('reset')
-                });
+                    downloadOutput.text('');
+                    downloadVideo(videoId, downloadFormat, function () {
+                        //$('#video-panel').collapse('show');
+                        stateDoneSpan.removeClass('hide');
+                        stateDownloadingSpan.addClass('hide');
+                    });
+                };
             };
 
-            downloadButton.click(eventHandler);
+            downloadAudioButton.click(getEventHandler('audio'));
+            downloadVideoButton.click(getEventHandler('video'));
             videoInput.keypress(function (e) {
                 if (e.keyCode === 13) {
-                    eventHandler();
+                    getEventHandler('audio')();
                 }
             });
         },
 
-        downloadVideo = function downloadVideo(videoId, callback) {
+        downloadVideo = function downloadVideo(videoId, format, callback) {
             var htmlText,
-                url = 'download.php?v=' + encodeURIComponent(videoId);
+                url = 'download.php?v=' + encodeURIComponent(videoId) + '&format=' + encodeURIComponent(format);
 
             $.ajax({
                 url: url,
@@ -106,7 +114,7 @@ function main() {
                         callback();
                     } else {
                         setTimeout(function () {
-                            downloadVideo(videoId, callback);
+                            downloadVideo(videoId, format, callback);
                         }, 1000);
                     }
                 });

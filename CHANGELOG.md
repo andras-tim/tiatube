@@ -4,6 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased][unreleased]
+### Added
+- Able to download audio and video content too
+
 ### Changed
 - Updated license to GPLv3
 

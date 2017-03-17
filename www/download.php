@@ -44,21 +44,24 @@ function escape_newlines($text)
 function start_download()
 {
     global $video_id;
+    global $download_format;
 
     $home = sys_get_temp_dir() . '/tiatube-' . $video_id . '-' . session_id();
     mkdir($home, 0770);
 
     $_SESSION = array(
         'video' => $video_id,
+        'format' => $download_format,
         'status_last_pos' => 0,
         'ret' => 0,
         'result_path' => '',
         'done' => false,
         'home' => $home,
         'cmd' => sprintf(
-            '(stdbuf -oL %s %s; echo $? >%s) & echo $! >%s',
+            '(stdbuf -oL %s %s %s; echo $? >%s) & echo $! >%s',
             TIATUBE,
             escapeshellarg($video_id),
+            escapeshellarg($download_format),
             $home . '/ret',
             $home . '/pid'
         )
@@ -83,14 +86,28 @@ function start_download()
 
 function stream_content()
 {
-    $file = get_path_of_first_mp3($_SESSION['result_path']);
+    switch ($_SESSION['format'])
+    {
+        case 'audio':
+            $content_type = 'audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3';
+            $extension = '.mp3';
+            break;
+        case 'video':
+            $content_type = 'video/mp4';
+            $extension = '.mp4';
+            break;
+        default:
+            exit(sprintf('Unhandled format "%s"', $_SESSION['format']));
+    }
+
+    $file = get_path_of_first_file($_SESSION['result_path'], $extension);
     if (!$file)
     {
         http_response_code(404);
-        exit('Missing converted file');
+        exit(sprintf('Missing %s file', $extension));
     }
 
-    header('Content-Type: audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3');
+    header('Content-Type: ' . $content_type);
     header('Content-Transfer-Encoding: binary');
     header('Connection: Keep-Alive');
     header('Content-length: ' . filesize($file));
@@ -124,6 +141,19 @@ function validate_video_id($video_id)
     {
         http_response_code(400);
         exit(sprintf('Bad video ID "%s"', $video_id));
+    }
+}
+
+function validate_download_format($format)
+{
+    switch ($format)
+    {
+        case 'audio':
+        case 'video':
+            break;
+        default:
+            http_response_code(400);
+            exit(sprintf('Bad download format "%s"', $format));
     }
 }
 
@@ -189,9 +219,8 @@ function rm_r($dir)
     return true;
 }
 
-function get_path_of_first_mp3($dir)
+function get_path_of_first_file($dir, $extension)
 {
-    var_dump($dir);
     if (!is_dir($dir))
     {
         return false;
@@ -200,7 +229,7 @@ function get_path_of_first_mp3($dir)
     $objects = scandir($dir);
     foreach ($objects as $object)
     {
-        if ($object === '.' || $object === '..' || !ends_with($object, '.mp3'))
+        if ($object === '.' || $object === '..' || !ends_with($object, $extension))
         {
             continue;
         }
@@ -283,14 +312,14 @@ if (!function_exists('http_response_code'))
     }
 }
 
-function is_cache_valid($video_id)
+function is_cache_valid($video_id, $download_format)
 {
-    if (!isset($_SESSION['video']))
+    if (!isset($_SESSION['video']) || !isset($_SESSION['format']))
     {
         return false;
     }
 
-    if ($_SESSION['video'] !== $video_id)
+    if ($_SESSION['video'] !== $video_id || $_SESSION['format'] !== $download_format)
     {
         return false;
     }
@@ -318,9 +347,12 @@ session_start();
 $video_id = get_parameter('v');
 validate_video_id($video_id);
 
+$download_format = get_parameter('format');
+validate_download_format($download_format);
+
 try
 {
-    if (is_cache_valid($video_id))
+    if (is_cache_valid($video_id, $download_format))
     {
         if (isset($_GET['dl']))
         {
