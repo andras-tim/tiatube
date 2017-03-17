@@ -1,6 +1,5 @@
 #!/bin/bash
-
-set -e
+set -euf -o pipefail
 
 BASEDIR="$(dirname "$0")"
 CONFIG="${BASEDIR}/www/js/config.js"
