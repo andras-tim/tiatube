@@ -10,6 +10,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Updated license to GPLv3
 
+### Fixed
+- Fixed PHP7 background process starting issue
+
 
 ## [1.1.0] - 2017-03-16
 ### Added

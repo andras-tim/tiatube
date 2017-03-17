@@ -6,7 +6,7 @@ header('Pragma: no-cache');
 const TIATUBE = '/opt/tiatube/tiatube.sh';
 
 //decrease niceness
-proc_nice(10);
+CONST BACKGROUND_COMMAND_NICE_LEVEL = 10;
 
 function get_current_status()
 {
@@ -46,8 +46,16 @@ function start_download()
     global $video_id;
     global $download_format;
 
-    $home = sys_get_temp_dir() . '/tiatube-' . $video_id . '-' . session_id();
-    mkdir($home, 0770);
+    $home_dir = sys_get_temp_dir() . '/tiatube-' . $video_id . '-' . session_id();
+    mkdir($home_dir, 0770);
+
+    $pid_file = $home_dir . '/pid';
+    $ret_file = $home_dir . '/ret';
+    $stdout_file = $home_dir . '/stdout';
+    $stderr_file = $home_dir . '/stderr';
+
+    $cmd = array('stdbuf', '-oL', TIATUBE, $video_id, $download_format);
+    $env = array('HOME' => $home_dir);
 
     $_SESSION = array(
         'video' => $video_id,
@@ -56,32 +64,53 @@ function start_download()
         'ret' => 0,
         'result_path' => '',
         'done' => false,
-        'home' => $home,
-        'cmd' => sprintf(
-            '(stdbuf -oL %s %s %s; echo $? >%s) & echo $! >%s',
-            TIATUBE,
-            escapeshellarg($video_id),
-            escapeshellarg($download_format),
-            $home . '/ret',
-            $home . '/pid'
-        )
+        'home' => $home_dir,
+        'proc' => TIATUBE
     );
 
-    $descriptor_spec = array(
-        0 => array('pipe', 'r'),
-        1 => array('file', $home . '/stdout', 'a'),
-        2 => array('file', $home . '/stderr', 'a'),
-    );
-    $env = array(
-        'HOME' => $home,
-    );
-    $process = proc_open($_SESSION['cmd'], $descriptor_spec, $pipes, null, $env);
-    fclose($pipes[0]);
-
-    //$status = proc_get_status($process);
-    //$_SESSION['pid'] = $status['pid'];
+    run_daemon($cmd, $pid_file, $ret_file, $stdout_file, $stderr_file, $home_dir, $env);
     sleep(1);
-    $_SESSION['pid'] = intval(file_get_contents($home . '/pid'));
+
+    $_SESSION['pid'] = intval(file_get_contents($pid_file));
+}
+
+function run_daemon(array $command = array(), $pid_file, $ret_file, $stdout_file, $stderr_file, $cws = null, array $env = array())
+{
+    $bash_command = sprintf(
+        '%s >%s 2>%s; echo $? >%s',
+        escape_command($command),
+        escapeshellarg($stdout_file),
+        escapeshellarg($stderr_file),
+        escapeshellarg($ret_file)
+    );
+    $wrapper_command = array(
+        'start-stop-daemon', '--start', '--background',
+        '--make-pidfile', '--pidfile',  $pid_file,
+        '--nicelevel', BACKGROUND_COMMAND_NICE_LEVEL,
+        '--exec', '/bin/bash', '--', '-c', $bash_command
+    );
+
+    $ret = run($wrapper_command, $cws, $env);
+    if ($ret !== 0)
+    {
+        file_put_contents($ret_file, sprintf('%d', $ret));
+    }
+}
+
+function run(array $command, $cwd = null, array $env = array())
+{
+    $process = proc_open(escape_command($command), array(), $pipes, $cwd, $env);
+    fclose($pipes[0]); //close stdin
+    $ret = proc_close($process);
+
+    return $ret;
+}
+
+function escape_command(array $command)
+{
+    return implode(' ', array_map(static function ($arg) {
+        return escapeshellarg($arg);
+    }, $command));
 }
 
 function stream_content()
@@ -179,7 +208,8 @@ function is_session_process_running()
         return false;
     }
 
-    $running = stripos(get_command_by_pid($_SESSION['pid']), $_SESSION['cmd']) !== false;
+    $command_of_pid = get_command_by_pid($_SESSION['pid']);
+    $running = stripos($command_of_pid, $_SESSION['proc']) !== false;
 
     return $running;
 }
