@@ -123,7 +123,7 @@ function main()
             ;;
 
         video)
-            youtube_dl --format bestvideo+bestaudio --embed-subs --add-metadata --merge-output-format mp4 -o "${filename}.%(ext)s" -- "${video_id}" \
+            youtube_dl --format bestvideo+bestaudio --embed-subs --add-metadata --merge-output-format mkv -o "${filename}.%(ext)s" -- "${video_id}" \
                 || quit $? "Can not download video ${video_id}"
             ;;
 

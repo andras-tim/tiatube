@@ -62,7 +62,7 @@ $welcome = $welcomes[array_rand($welcomes)];
       <!-- Main jumbotron for a primary marketing message or call to action -->
       <div class="jumbotron">
         <h1><?php echo htmlspecialchars($welcome, null, 'UTF-8'); ?></h1>
-        <p>Ezzel az eszközzel könnyedén letöltheted kedvenc Youtube videóid hanganyagát MP3, vagy a komplett videót MP4 formátumben, a lehető legjobb minőségben! Nem kell mást tenned, csak másold be a Youtube videód internet címét a lenti mezőbé, és kattints valamelyik letöltés gombra!</p>
+        <p>Ezzel az eszközzel könnyedén letöltheted kedvenc Youtube videóid hanganyagát MP3, vagy a komplett videót MKV formátumban, a lehető legjobb minőségben! Nem kell mást tenned, csak másold be a Youtube videód internet címét a lenti mezőbé, és kattints valamelyik letöltés gombra!</p>
       </div>
 
 

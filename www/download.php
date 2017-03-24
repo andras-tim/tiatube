@@ -122,8 +122,8 @@ function stream_content()
             $extension = '.mp3';
             break;
         case 'video':
-            $content_type = 'video/mp4';
-            $extension = '.mp4';
+            $content_type = 'video/x-matroska';
+            $extension = '.mkv';
             break;
         default:
             exit(sprintf('Unhandled format "%s"', $_SESSION['format']));
