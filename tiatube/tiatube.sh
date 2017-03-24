@@ -35,7 +35,7 @@ function quit()
 
 function youtube_dl()
 {
-    youtube-dl --ignore-config -r "${DOWNLOAD_LIMIT}" --no-playlist --prefer-ffmpeg --ffmpeg-location '/usr/local/bin/ffmpeg' "$@"
+    youtube-dl --ignore-config -r "${DOWNLOAD_LIMIT}" --no-playlist --prefer-ffmpeg "$@"
 }
 
 function tag_mp3()
