@@ -68,16 +68,16 @@ $welcome = $welcomes[array_rand($welcomes)];
 
       <div class="panel panel-default">
         <div class="panel-heading">
-          <a data-toggle="collapse" data-parent="#accordion" href="#video-collapse">
-            <span class="panel-title">Videó</span>
+          <a data-toggle="collapse" data-parent="#accordion" href="#source-collapse">
+            <span class="panel-title">Forrás</span>
           </a>
         </div>
-        <div class="panel-collapse collapse in" id="video-collapse">
+        <div class="panel-collapse collapse in" id="source-collapse">
           <div class="panel-body">
 
             <div class="input-group">
               <span class="input-group-addon">youtube.com/watch?v=</span>
-              <input type="text" class="form-control" id="video-id" placeholder="videó URL, vagy azonosító" autocomplete="off" autofocus>
+              <input type="text" class="form-control" id="url-id" placeholder="videó URL, vagy azonosító" autocomplete="off" autofocus>
               <span class="input-group-btn">
                 <button type="button" class="btn btn-primary" id="start-download-audio" title="Hang letöltése"><i class="fa fa-music" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-success" id="start-download-video" title="Videó letöltése"><i class="fa fa-video-camera" aria-hidden="true"></i></button>

@@ -7,8 +7,8 @@ function main() {
         /**
          * Static UI elements
          */
-        videoCollapse = $('#video-collapse'),
-        videoInput = $('#video-id'),
+        sourceCollapse = $('#source-collapse'),
+        videoInput = $('#url-id'),
         downloadAudioButton = $('#start-download-audio'),
         downloadVideoButton = $('#start-download-video'),
 
@@ -21,11 +21,11 @@ function main() {
          * Download
          */
         initializePanels = function initializePanels() {
-            videoCollapse.on('show.bs.collapse', function () {
+            sourceCollapse.on('show.bs.collapse', function () {
                 downloadCollapse.collapse('hide');
             });
 
-            videoCollapse.on('hide.bs.collapse', function () {
+            sourceCollapse.on('hide.bs.collapse', function () {
                 //downloadPanel.show();
                 downloadCollapse.collapse('show');
             });
@@ -64,7 +64,7 @@ function main() {
                     videoInput.val(videoId);
                     stateDownloadingSpan.removeClass('hide');
                     stateDoneSpan.addClass('hide');
-                    videoCollapse.collapse('hide');
+                    sourceCollapse.collapse('hide');
 
                     downloadOutput.text('');
                     downloadVideo(videoId, downloadFormat, function () {
