@@ -3,6 +3,11 @@
 /*
  * Bootstrap customizations
  */
+.container .jumbotron,
+.container-fluid .jumbotron {
+    padding-top: 60px;
+}
+
 .navbar-inverse .navbar-brand {
     color: #777;
 }

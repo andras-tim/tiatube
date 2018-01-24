@@ -76,8 +76,8 @@ $welcome = $welcomes[array_rand($welcomes)];
           <div class="panel-body">
 
             <div class="input-group">
-              <span class="input-group-addon">youtube.com/watch?v=</span>
-              <input type="text" class="form-control" id="url-id" placeholder="videó URL, vagy azonosító" autocomplete="off" autofocus>
+              <span class="input-group-addon hidden-xs">youtube.com/watch?v=</span>
+              <input type="text" class="form-control" id="url-id" placeholder="Youtube URL vagy azonosító" autocomplete="off" autofocus>
               <span class="input-group-btn">
                 <button type="button" class="btn btn-primary" id="start-download-audio" title="Hang letöltése"><i class="fa fa-music" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-success" id="start-download-video" title="Videó letöltése"><i class="fa fa-video-camera" aria-hidden="true"></i></button>
