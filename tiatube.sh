@@ -112,9 +112,7 @@ function main()
                 then
                     print_status 'Write ID3 info'
                     tag_mp3  --artist='YouTube' --title="${title}" --add-image="${image_name}:FRONT_COVER" --user-url-frame=":http\\://www.youtube.com/watch?v=${video_id}" -- "${mp3_name}" \
-                        || quit $? "Can not set META info for video ${video_id}"
-                else
-                    echo '(skipped)'
+                        || echo '(skipped)'
                 fi
                 rm -- "${image_name}"
             else

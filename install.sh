@@ -11,4 +11,5 @@ then
 fi
 
 apt-get install ffmpeg libmp3lame0
-pip install --upgrade youtube-dl eyed3==0.8.12 iconv pathlib
+pip install eyed3==0.8.12 iconv pathlib
+pip install --upgrade youtube-dl
