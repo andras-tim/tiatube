@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euf -o pipefail
 
+FFMPEG_PATH='/usr/local/bin/ffmpeg'
 TMP_DIR="/tmp/tiatube_$(date '+%Y%m%d-%H%M%S')_$$"
 DOWNLOAD_LIMIT='4M'
 
@@ -35,7 +36,7 @@ function quit()
 
 function youtube_dl()
 {
-    youtube-dl --ignore-config -r "${DOWNLOAD_LIMIT}" --no-playlist --restrict-filenames --prefer-ffmpeg --ffmpeg-location '/usr/local/bin/ffmpeg' "$@"
+    youtube-dl --ignore-config -r "${DOWNLOAD_LIMIT}" --no-playlist --restrict-filenames --prefer-ffmpeg --ffmpeg-location "${FFMPEG_PATH}" "$@"
 }
 
 function tag_mp3()
@@ -43,13 +44,14 @@ function tag_mp3()
     eyeD3 --v2 --encoding=latin1 --no-config --no-color "$@"
 }
 
-function resize_image()
+function normalize_image()
 {
-    local image="$1"
+    local image_name="$1"
 
-    convert -resize 300x300 -gravity center -extent 300x300 -background black "${image}" "resized_${image}" \
+    "${FFMPEG_PATH}" -i "${image_name}" "converted_${image_name}"
+    convert -resize 300x300 -gravity center -extent 300x300 -background black "converted_${image_name}" "${image_name}" \
         || return $?
-    mv "resized_${image}" "${image}"
+    rm -f -- "converted_${image_name}"
 }
 
 function cleanup_title()
@@ -104,7 +106,7 @@ function main()
             mp3_name="${filename}.mp3"
             image_name="${filename}.jpg"
 
-            print_status 'Resize image'
+            print_status 'Normalize image'
             if [[ -e "${image_name}" ]]
             then
                 normalize_image "${image_name}" \
