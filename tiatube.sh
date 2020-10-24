@@ -107,7 +107,8 @@ function main()
             print_status 'Resize image'
             if [[ -e "${image_name}" ]]
             then
-                resize_image "${image_name}"
+                normalize_image "${image_name}" \
+                    || echo '(skipped)'
                 if [[ -e "${mp3_name}" ]]
                 then
                     print_status 'Write ID3 info'
