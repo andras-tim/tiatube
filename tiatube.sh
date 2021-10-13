@@ -46,12 +46,15 @@ function tag_mp3()
 
 function normalize_image()
 {
-    local image_name="$1"
+    local src_image_name="$1"
+    local dst_image_name="$2"
 
-    "${FFMPEG_PATH}" -i "${image_name}" "converted_${image_name}"
-    convert -resize 300x300 -gravity center -extent 300x300 -background black "converted_${image_name}" "${image_name}" \
+    "${FFMPEG_PATH}" -i "${src_image_name}" "converted_${dst_image_name}"
+
+    convert -resize 300x300 -gravity center -extent 300x300 -background black -- "converted_${dst_image_name}" "${dst_image_name}" \
         || return $?
-    rm -f -- "converted_${image_name}"
+
+    rm -f -- "converted_${dst_image_name}"
 }
 
 function cleanup_title()
@@ -107,24 +110,44 @@ function main()
                 || quit $? "Can not download video ${video_id}"
 
             print_step 'POST PROCESSING'
-            mp3_name="${filename}.mp3"
-            image_name="${filename}.jpg"
+            local tag_args
+            tag_args=(
+                --artist='YouTube'
+                --title="${title}"
+                --user-url-frame=":http\\://www.youtube.com/watch?v=${video_id}"
+            )
 
-            print_status 'Normalize image'
-            if [[ -e "${image_name}" ]]
-            then
-                normalize_image "${image_name}" \
-                    || echo '(skipped)'
-                if [[ -e "${mp3_name}" ]]
-                then
-                    print_status 'Write ID3 info'
-                    tag_mp3  --artist='YouTube' --title="${title}" --add-image="${image_name}:FRONT_COVER" --user-url-frame=":http\\://www.youtube.com/watch?v=${video_id}" -- "${mp3_name}" \
-                        || echo '(skipped)'
-                fi
-                rm -- "${image_name}"
-            else
-                echo '(skipped)'
+            local src_image_name
+            src_image_name="${filename}.jpg"
+            if [ ! -e "${src_image_name}" ]; then
+                src_image_name="${filename}.webp"
             fi
+            local dst_image_name
+            dst_image_name='front_cover.jpg'
+
+            if [ -e "${src_image_name}" ]; then
+                print_status 'Normalize image'
+                if normalize_image "${src_image_name}" "${dst_image_name}"; then
+                    tag_args+=(
+                        "--add-image=${dst_image_name}:FRONT_COVER"
+                    )
+                else
+                    echo '(skipped)'
+                fi
+            fi
+
+            local mp3_name
+            mp3_name="${filename}.mp3"
+
+            if [[ -e "${mp3_name}" ]]; then
+                print_status 'Write ID3 info'
+                if ! tag_mp3 "${tag_args[@]}" -- "${mp3_name}"; then
+                    echo '(skipped)'
+                fi
+            fi
+
+            rm -f -- "${src_image_name}"
+            rm -f -- "${dst_image_name}"
             ;;
 
         video)
