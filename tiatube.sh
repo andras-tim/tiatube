@@ -91,9 +91,13 @@ function main()
     print_step 'DOWNLOAD'
     echo "Selected format: $(youtube_dl --get-format -- "${video_id}")" \
         || quit $? "Can not getting formats of video ${video_id}"
-    local title="$(youtube_dl -o '%(title)s [%(id)s]' --get-filename -- "${video_id}" | cleanup_title)" \
+
+    local title
+    title="$(youtube_dl -o '%(title)s [%(id)s]' --get-filename -- "${video_id}" | cleanup_title)" \
         || quit $? "Can not getting title of video ${video_id}"
-    local filename="$(echo "${title}" | cleanup_filename)" \
+
+    local filename
+    filename="$(echo "${title}" | cleanup_filename)" \
         || quit $? "Can not getting filename of video ${video_id}"
     echo -e "Filename: '${filename}'\n"
 
