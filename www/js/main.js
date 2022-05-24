@@ -1,6 +1,3 @@
-/**
- * tia @ 2014
- */
 function main() {
     var config = getConfig(),
 
@@ -98,15 +95,15 @@ function main() {
                     alert('Unhandled error: ' + jqXHR.responseText);
                     callback();
                 })
-                .done(function (data, textStatus, jqXHR) {
-                    if (data['status-tail'] != "") {
+                .done(function (data) {
+                    if (data['status-tail'] !== "") {
                         htmlText = String($('<div/>').text(data['status-tail']).html())
                             .replace(/\\n/g, "<br />");
                         downloadOutput.append(htmlText);
                         window.scrollTo(0, document.body.scrollHeight);
                     }
-                    if (data['done'] == true) {
-                        if (data['ret'] == 0) {
+                    if (data['done'] === true) {
+                        if (data['ret'] === 0) {
                             window.location.assign(url + '&dl=1');
                         } else {
                             alert('Download error');
@@ -136,7 +133,7 @@ function main() {
     /**
      * Initialize
      */
-    this.initialize = function () {
+    this.init = function init() {
         initializePanels();
         initializeVideoUrl();
         initializeEventHandlers();
@@ -150,4 +147,4 @@ function main() {
 }
 
 
-main().initialize();
+main().init();

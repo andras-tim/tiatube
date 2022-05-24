@@ -3,14 +3,14 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-$welcomes = array(
+$WELCOMES = array(
     'Ahoy!',
     'Üdvözlet!',
     'Hali!',
     'Szia!',
     'Szeva!',
 );
-$welcome = $welcomes[array_rand($welcomes)];
+$welcome = $WELCOMES[array_rand($WELCOMES)];
 ?>
 <!DOCTYPE html>
 <html lang="hu-HU">
@@ -53,7 +53,7 @@ $welcome = $welcomes[array_rand($welcomes)];
     <div class="container">
         <div class="navbar-header">
             <a class="navbar-brand" href="https://github.com/andras-tim/tiatube">
-                <span><img src="ico/apple-touch-icon-57-precomposed.png"></span> tiaTube
+                <span><img src="ico/apple-touch-icon-57-precomposed.png" alt="Logo"></span> tiaTube
             </a>
         </div>
     </div>

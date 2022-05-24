@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Replaced video container from MP4 to MKV (MP4 was too strict and can not be contain WEBM)
 
+### Fixed
+- Small code fixes
+
 
 ## [2.0.0] - 2017-03-17
 ### Added

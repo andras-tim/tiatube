@@ -3,7 +3,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 
-const TIATUBE = '/opt/tiatube/tiatube.sh';
+define("TIATUBE", sprintf('%s/tiatube.sh', realpath(dirname(dirname(__FILE__)))));
 
 //decrease niceness
 const BACKGROUND_COMMAND_NICE_LEVEL = 10;
@@ -74,8 +74,7 @@ function start_download()
     $_SESSION['pid'] = intval(file_get_contents($pid_file));
 }
 
-function run_daemon(array $command = array(), $pid_file, $ret_file, $stdout_file, $stderr_file, $cws = null,
-                    array $env = array())
+function run_daemon(array $command, $pid_file, $ret_file, $stdout_file, $stderr_file, $cws = null, array $env = array())
 {
     $bash_command = sprintf(
         '%s >%s 2>%s; echo $? >%s',
@@ -111,9 +110,8 @@ function run(array $command, $cwd = null, array $env = array())
 {
     $process = proc_open(escape_command($command), array(), $pipes, $cwd, $env);
     fclose($pipes[0]); //close stdin
-    $ret = proc_close($process);
 
-    return $ret;
+    return proc_close($process);
 }
 
 function escape_command(array $command)
@@ -201,8 +199,7 @@ function validate_download_format($format)
 
 function cleanup()
 {
-    $running = is_session_process_running();
-    if ($running)
+    if (is_session_process_running())
     {
         posix_kill($_SESSION['pid'], SIGTERM);
     }
@@ -222,9 +219,8 @@ function is_session_process_running()
     }
 
     $command_of_pid = get_command_by_pid($_SESSION['pid']);
-    $running = stripos($command_of_pid, $_SESSION['proc']) !== false;
 
-    return $running;
+    return stripos($command_of_pid, $_SESSION['proc']) !== false;
 }
 
 function get_command_by_pid($pid)
@@ -234,7 +230,7 @@ function get_command_by_pid($pid)
 
 function rm_r($dir)
 {
-    if (!is_dir($dir) || $dir === '')
+    if (!$dir || !is_dir($dir))
     {
         return false;
     }
@@ -256,7 +252,6 @@ function rm_r($dir)
             unlink($dir . '/' . $object);
         }
     }
-    reset($objects);
     rmdir($dir);
 
     return true;
@@ -282,7 +277,6 @@ function get_path_of_first_file($dir, $extension)
             return $dir . '/' . $object;
         }
     }
-    reset($objects);
 
     return false;
 }
@@ -414,7 +408,6 @@ if (!function_exists('http_response_code'))
                     break;
                 default:
                     exit(sprintf('Unknown http status code "%d"', $code));
-                    break;
             }
             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
             header($protocol . ' ' . $code . ' ' . $text);
@@ -446,7 +439,7 @@ function is_cache_valid($video_id, $download_format)
         return false;
     }
 
-    if ($_SESSION['home'] === '' || !is_dir($_SESSION['home']))
+    if (!$_SESSION['home'] || !is_dir($_SESSION['home']))
     {
         return false;
     }
@@ -482,7 +475,7 @@ try
         if (isset($_GET['dl']))
         {
             http_response_code(405);
-            exit(sprintf('Video does not yet downloaded'));
+            exit('Video does not yet downloaded');
         }
         cleanup();
         start_download();
