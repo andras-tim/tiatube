@@ -8,21 +8,70 @@ define("TIATUBE", sprintf('%s/tiatube.sh', realpath(dirname(dirname(__FILE__))))
 //decrease niceness
 const BACKGROUND_COMMAND_NICE_LEVEL = 10;
 
+
+function main()
+{
+    $video_id = get_parameter('v');
+    validate_video_id($video_id);
+    define('VIDEO_ID', $video_id);
+
+    initialize_session();
+
+    $download_format = get_parameter('format');
+    validate_download_format($download_format);
+    define('DOWNLOAD_FORMAT', $download_format);
+
+    try
+    {
+        if (is_cache_valid())
+        {
+            if (isset($_GET['dl']))
+            {
+                stream_content();
+                exit();
+            }
+        }
+        else
+        {
+             if (isset($_GET['dl']))
+            {
+                http_response_code(405);
+                exit('Video does not yet downloaded');
+            }
+            cleanup();
+            start_download();
+        }
+
+        get_current_status();
+        if (was_download_error())
+        {
+            cleanup();
+        }
+    }
+    catch (Exception $e)
+    {
+        http_response_code(400);
+        cleanup();
+        exit(sprintf("Caught exception: %s\n", $e->getMessage()));
+    }
+}
+
+
 function get_current_status()
 {
     $status_tail = '';
-    if ($_SESSION['done'] === false)
+    if ($_SESSION['dl'][VIDEO_ID]['done'] === false)
     {
         $running = is_session_process_running();
 
-        $status_tail = file_get_contents($_SESSION['home'] . '/stderr', null, null, $_SESSION['status_last_pos']);
-        $_SESSION['status_last_pos'] += strlen($status_tail);
+        $status_tail = file_get_contents($_SESSION['dl'][VIDEO_ID]['home'] . '/stderr', null, null, $_SESSION['dl'][VIDEO_ID]['status_last_pos']);
+        $_SESSION['dl'][VIDEO_ID]['status_last_pos'] += strlen($status_tail);
 
         if (!$running)
         {
-            $_SESSION['ret'] = intval(file_get_contents($_SESSION['home'] . '/ret'));
-            $_SESSION['result_path'] = trim(file_get_contents($_SESSION['home'] . '/stdout'));
-            $_SESSION['done'] = true;
+            $_SESSION['dl'][VIDEO_ID]['ret'] = intval(file_get_contents($_SESSION['dl'][VIDEO_ID]['home'] . '/ret'));
+            $_SESSION['dl'][VIDEO_ID]['result_path'] = trim(file_get_contents($_SESSION['dl'][VIDEO_ID]['home'] . '/stdout'));
+            $_SESSION['dl'][VIDEO_ID]['done'] = true;
         }
     }
 
@@ -30,8 +79,8 @@ function get_current_status()
     echo json_encode(
         array(
             'status-tail' => escape_newlines($status_tail),
-            'ret' => $_SESSION['ret'],
-            'done' => $_SESSION['done'],
+            'ret' => $_SESSION['dl'][VIDEO_ID]['ret'],
+            'done' => $_SESSION['dl'][VIDEO_ID]['done'],
         )
     );
 }
@@ -43,10 +92,8 @@ function escape_newlines($text)
 
 function start_download()
 {
-    global $video_id;
-    global $download_format;
-
-    $home_dir = sys_get_temp_dir() . '/tiatube-' . $video_id . '-' . session_id();
+    $home_dir = sprintf('%s/tiatube-%s-%s', sys_get_temp_dir(), VIDEO_ID, DOWNLOAD_FORMAT);
+    rm_r($home_dir);
     mkdir($home_dir, 0770);
 
     $pid_file = $home_dir . '/pid';
@@ -54,24 +101,21 @@ function start_download()
     $stdout_file = $home_dir . '/stdout';
     $stderr_file = $home_dir . '/stderr';
 
-    $cmd = array('stdbuf', '-oL', TIATUBE, $video_id, $download_format);
+    $cmd = array('stdbuf', '-oL', TIATUBE, VIDEO_ID, DOWNLOAD_FORMAT);
     $env = array('HOME' => $home_dir);
 
-    $_SESSION = array(
-        'video' => $video_id,
-        'format' => $download_format,
-        'status_last_pos' => 0,
-        'ret' => 0,
-        'result_path' => '',
-        'done' => false,
-        'home' => $home_dir,
-        'proc' => TIATUBE
-    );
+    $_SESSION['dl'][VIDEO_ID]['format'] = DOWNLOAD_FORMAT;
+    $_SESSION['dl'][VIDEO_ID]['status_last_pos'] = 0;
+    $_SESSION['dl'][VIDEO_ID]['ret'] = 0;
+    $_SESSION['dl'][VIDEO_ID]['result_path'] = '';
+    $_SESSION['dl'][VIDEO_ID]['done'] = false;
+    $_SESSION['dl'][VIDEO_ID]['home'] = $home_dir;
+    $_SESSION['dl'][VIDEO_ID]['proc'] = TIATUBE;
 
     run_daemon($cmd, $pid_file, $ret_file, $stdout_file, $stderr_file, $home_dir, $env);
     sleep(1);
 
-    $_SESSION['pid'] = intval(file_get_contents($pid_file));
+    $_SESSION['dl'][VIDEO_ID]['pid'] = intval(file_get_contents($pid_file));
 }
 
 function run_daemon(array $command, $pid_file, $ret_file, $stdout_file, $stderr_file, $cws = null, array $env = array())
@@ -143,7 +187,7 @@ function escape_command(array $command)
 
 function stream_content()
 {
-    switch ($_SESSION['format'])
+    switch ($_SESSION['dl'][VIDEO_ID]['format'])
     {
         case 'audio':
             $content_type = 'audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3';
@@ -154,10 +198,10 @@ function stream_content()
             $extension = '.mkv';
             break;
         default:
-            exit(sprintf('Unhandled format "%s"', $_SESSION['format']));
+            exit(sprintf('Unhandled format "%s"', $_SESSION['dl'][VIDEO_ID]['format']));
     }
 
-    $file = get_path_of_first_file($_SESSION['result_path'], $extension);
+    $file = get_path_of_first_file($_SESSION['dl'][VIDEO_ID]['result_path'], $extension);
     if (!$file)
     {
         http_response_code(404);
@@ -216,29 +260,46 @@ function validate_download_format($format)
 
 function cleanup()
 {
+    if (!isset($_SESSION['dl'][VIDEO_ID]))
+    {
+        return;
+    }
+
     if (is_session_process_running())
     {
-        $session_id = posix_getsid($_SESSION['pid']);
+        $session_id = posix_getsid($_SESSION['dl'][VIDEO_ID]['pid']);
         system(sprintf('pkill -s %d', $session_id));
     }
 
-    rm_r($_SESSION['home']);
-    rm_r($_SESSION['result_path']);
+    if (isset($_SESSION['dl'][VIDEO_ID]['home']))
+    {
+        rm_r($_SESSION['dl'][VIDEO_ID]['home']);
+    }
 
-    session_unset();
+    if (isset($_SESSION['dl'][VIDEO_ID]['result_path']))
+    {
+        rm_r($_SESSION['dl'][VIDEO_ID]['result_path']);
+    }
+
+    unset($_SESSION['dl'][VIDEO_ID]);
 }
 
 function is_session_process_running()
 {
-    $running = posix_getpgid($_SESSION['pid']);
+    if (!isset($_SESSION['dl'][VIDEO_ID]['pid']))
+    {
+        return false;
+    }
+
+    $running = posix_getpgid($_SESSION['dl'][VIDEO_ID]['pid']);
     if (!$running)
     {
         return false;
     }
 
-    $command_of_pid = get_command_by_pid($_SESSION['pid']);
+    $command_of_pid = get_command_by_pid($_SESSION['dl'][VIDEO_ID]['pid']);
 
-    return stripos($command_of_pid, $_SESSION['proc']) !== false;
+    return stripos($command_of_pid, $_SESSION['dl'][VIDEO_ID]['proc']) !== false;
 }
 
 function get_command_by_pid($pid)
@@ -440,14 +501,14 @@ if (!function_exists('http_response_code'))
     }
 }
 
-function is_cache_valid($video_id, $download_format)
+function is_cache_valid()
 {
-    if (!isset($_SESSION['video']) || !isset($_SESSION['format']))
+    if (!isset($_SESSION['dl'][VIDEO_ID]['format']))
     {
         return false;
     }
 
-    if ($_SESSION['video'] !== $video_id || $_SESSION['format'] !== $download_format)
+    if ($_SESSION['dl'][VIDEO_ID]['format'] !== DOWNLOAD_FORMAT)
     {
         return false;
     }
@@ -457,7 +518,7 @@ function is_cache_valid($video_id, $download_format)
         return false;
     }
 
-    if (!$_SESSION['home'] || !is_dir($_SESSION['home']))
+    if (!$_SESSION['dl'][VIDEO_ID]['home'] || !is_dir($_SESSION['dl'][VIDEO_ID]['home']))
     {
         return false;
     }
@@ -467,47 +528,23 @@ function is_cache_valid($video_id, $download_format)
 
 function was_download_error()
 {
-    return $_SESSION['done'] === true && $_SESSION['ret'] !== 0;
+    return $_SESSION['dl'][VIDEO_ID]['done'] === true && $_SESSION['dl'][VIDEO_ID]['ret'] !== 0;
 }
 
-
-session_start();
-$video_id = get_parameter('v');
-validate_video_id($video_id);
-
-$download_format = get_parameter('format');
-validate_download_format($download_format);
-
-try
+function initialize_session()
 {
-    if (is_cache_valid($video_id, $download_format))
+    session_start();
+
+    if (!key_exists('dl', $_SESSION))
     {
-        if (isset($_GET['dl']))
-        {
-            stream_content();
-            exit();
-        }
-    }
-    else
-    {
-        if (isset($_GET['dl']))
-        {
-            http_response_code(405);
-            exit('Video does not yet downloaded');
-        }
-        cleanup();
-        start_download();
+        $_SESSION['dl'] = array();
     }
 
-    get_current_status();
-    if (was_download_error())
+    if (!key_exists(VIDEO_ID, $_SESSION['dl']))
     {
-        cleanup();
+        $_SESSION['dl'][VIDEO_ID] = array();
     }
 }
-catch (Exception $e)
-{
-    http_response_code(400);
-    cleanup();
-    exit(sprintf("Caught exception: %s\n", $e->getMessage()));
-}
+
+
+main();

@@ -14,6 +14,8 @@ function main() {
         downloadCollapse = $('#download-collapse'),
         downloadOutput = $('#download-output'),
 
+        statusRefreshTimer = null,
+
         /**
          * Download
          */
@@ -85,6 +87,10 @@ function main() {
             var htmlText,
                 url = 'download.php?v=' + encodeURIComponent(videoId) + '&format=' + encodeURIComponent(format);
 
+            if (statusRefreshTimer !== null) {
+                clearTimeout(statusRefreshTimer);
+            }
+
             $.ajax({
                 url: url,
                 cache: false,
@@ -110,7 +116,7 @@ function main() {
                         }
                         callback();
                     } else {
-                        setTimeout(function () {
+                        statusRefreshTimer = setTimeout(function () {
                             downloadVideo(videoId, format, callback);
                         }, 1000);
                     }

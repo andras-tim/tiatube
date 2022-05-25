@@ -4,6 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased][unreleased]
+### Added
+- Parallel downloading
+
 ### Changed
 - Replaced video container from MP4 to MKV (MP4 was too strict and can not be contain WEBM)
 
