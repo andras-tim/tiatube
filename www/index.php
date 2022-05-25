@@ -3,6 +3,8 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
+include_once 'version.php';
+
 $WELCOMES = array(
     'Ahoy!',
     'Üdvözlet!',
@@ -18,7 +20,7 @@ $welcome = $WELCOMES[array_rand($WELCOMES)];
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="description" content="tiaTube"/>
-    <meta name="version" content="2.0.0"/>
+    <meta name="version" content="<?php echo(VERSION); ?>"/>
     <meta name="author" content="Andras Tim"/>
     <meta name="source" content="https://github.com/andras-tim/tiatube"/>
 
@@ -126,7 +128,7 @@ $welcome = $WELCOMES[array_rand($WELCOMES)];
         crossorigin="anonymous"></script>
 
 <!-- Main -->
-<script src="js/config.js"></script>
-<script src="js/main.js"></script>
+<script src="js/config.js?_v=<?php echo(VERSION); ?>"></script>
+<script src="js/main.js?_v=<?php echo(VERSION); ?>"></script>
 </body>
 </html>
