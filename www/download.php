@@ -108,8 +108,25 @@ function run_daemon(array $command, $pid_file, $ret_file, $stdout_file, $stderr_
 
 function run(array $command, $cwd = null, array $env = array())
 {
-    $process = proc_open(escape_command($command), array(), $pipes, $cwd, $env);
-    fclose($pipes[0]); //close stdin
+    $descriptor_spec = array(
+        0 => array('pipe', 'r'),
+        1 => array('pipe', 'w'),
+        2 => array('pipe', 'w'),
+    );
+
+    $process = proc_open(escape_command($command), $descriptor_spec, $pipes, $cwd, $env);
+    if (!is_resource($process))
+    {
+        return null;
+    }
+
+    fclose($pipes[0]);
+
+    stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+
+    stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
 
     return proc_close($process);
 }
@@ -201,7 +218,8 @@ function cleanup()
 {
     if (is_session_process_running())
     {
-        posix_kill($_SESSION['pid'], SIGTERM);
+        $session_id = posix_getsid($_SESSION['pid']);
+        system(sprintf('pkill -s %d', $session_id));
     }
 
     rm_r($_SESSION['home']);

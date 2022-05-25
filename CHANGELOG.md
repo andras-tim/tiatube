@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 - Small code fixes
+- Fixed process management
 
 
 ## [2.0.0] - 2017-03-17
