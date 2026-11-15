@@ -4,9 +4,19 @@ IMAGE ?= tiatube:dev
 PORT ?= 8765
 DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build
 
-.PHONY: all web test image push run run-test stop clean ci
+.PHONY: all assets check-assets web test image push run run-test stop clean ci
 
 all: image
+
+## assets: regenerates assets/ (logos, install page background); commit the result
+assets:
+	$(DOCKER_BUILD) --target assets-out --output type=local,dest=assets .
+
+## check-assets: fails when assets/ is not what its sources make
+check-assets:
+	rm -rf dist/assets
+	$(DOCKER_BUILD) --target assets-out --output type=local,dest=dist/assets .
+	diff -r assets dist/assets
 
 ## web: the bundled web files into dist/web (the server embeds them; this target is for looking at them)
 web:
@@ -37,7 +47,7 @@ stop:
 	docker stop tiatube-dev
 
 ## ci: what the CI runs
-ci: test image
+ci: check-assets test image
 
 clean:
 	rm -rf dist

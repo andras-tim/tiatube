@@ -15,7 +15,8 @@ small server muxes and transcodes with ffmpeg only where a browser cannot. The p
 | `web/bookmarklet/` | `core/` (tiaWeb) and `sites/` (planned) |
 | `web/page/` | the tiaTube window (planned) |
 | `web/install/` | install page over the blurred old page (planned) |
-| `tools/logo/` | logo generator (Python, build time; its output is committed) |
+| `tools/assets/` | generators of `assets/` (logos from `sites.json`, install page background); Python, run by `make assets` |
+| `assets/` | generated, committed; `make check-assets` (part of `make ci`) fails when it is stale |
 | `screenshots/downloaded.png` | the old page; source of the install page background |
 
 The UI is in Hungarian; everything else (code, comments, docs, commit messages) is in English.

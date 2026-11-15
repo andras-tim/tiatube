@@ -3,6 +3,27 @@
 
 ARG GO_IMAGE=golang:1.26-alpine3.23
 ARG RUNTIME_IMAGE=alpine:3.23
+ARG PY_IMAGE=python:3.14-slim
+
+# ---- assets: the logos (from sites.json and the fonts) and the install page background; committed under assets/ ----
+FROM ${PY_IMAGE} AS assets
+WORKDIR /src
+COPY tools/assets/requirements.txt tools/assets/
+RUN pip install --no-cache-dir -r tools/assets/requirements.txt
+ADD --checksum=sha256:bc31e0b0583e8530795907883e768597bf7bdb4e47a65861dc393b4411439e22 \
+    https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8SKtjPQ.ttf \
+    /fonts/JetBrainsMono-ExtraBold.ttf
+ADD --checksum=sha256:20987dd8fd1d3e9ab087a55cb90e98081c873c729c113043e0bfb1ef0f9e0bd7 \
+    https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs1y9ogUE.ttf \
+    /fonts/Oswald-SemiBold.ttf
+COPY tools/assets/*.py tools/assets/
+COPY sites.json ./
+COPY screenshots/downloaded.png screenshots/
+RUN python3 -I tools/assets/logo.py --sites sites.json --fonts /fonts --out /out/logos \
+ && python3 -I tools/assets/background.py screenshots/downloaded.png /out/old-page.webp
+
+FROM scratch AS assets-out
+COPY --from=assets /out /
 
 # ---- web: the window, the install page and the bookmarklet, bundled by esbuild ----
 FROM ${GO_IMAGE} AS web
