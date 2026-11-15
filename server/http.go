@@ -97,7 +97,7 @@ func (a *API) createJob(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "bad job")
 		return
 	}
-	info := JobInfo{VideoID: cut(in.VideoID, 32), Title: cut(in.Title, 300), Author: cut(in.Author, 200),
+	info := JobInfo{Name: cut(in.Name, 200), VideoID: cut(in.VideoID, 32), Title: cut(in.Title, 300), Author: cut(in.Author, 200),
 		Duration: in.Duration, What: "audio", Format: "mp3"}
 	if reDate.MatchString(in.Date) {
 		info.Date = in.Date

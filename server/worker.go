@@ -103,7 +103,12 @@ func (b *Builder) run(j *Job, ms map[int]float64) error {
 		return err
 	}
 	complete := complete(ainfo, info.Duration) && (info.What != "video" || complete(vinfo, info.Duration))
-	name := safeName(strings.TrimSpace(fmt.Sprintf("%s %s [%s]", info.Prefix, info.Title, info.VideoID))) + "." + p.ext
+	// the window's name; the server only makes sure it is safe
+	base := info.Name
+	if base == "" {
+		base = fmt.Sprintf("%s %s [%s]", info.Prefix, info.Title, info.VideoID)
+	}
+	name := safeName(base) + "." + p.ext
 	j.Set(func(s *Status) {
 		s.State, s.Step, s.Pct = "done", "", nil
 		s.Files = map[string]string{p.ext: name}

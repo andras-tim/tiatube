@@ -21,6 +21,7 @@ var (
 
 // JobInfo is what the window tells about the media; validated on creation.
 type JobInfo struct {
+	Name     string   `json:"name"` // the file name without its extension; the window makes it
 	VideoID  string   `json:"videoId"`
 	Title    string   `json:"title"`
 	Author   string   `json:"author"`

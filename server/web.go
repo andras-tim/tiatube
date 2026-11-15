@@ -96,7 +96,7 @@ func (wb *Web) testLoader(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code, _ := json.Marshal(strings.ReplaceAll(string(src), "__TT_ORIGIN__", wb.origin(r)))
-	page := "<!doctype html><meta charset=utf-8><script>opener.postMessage({ttTestCode: " + string(code) +
-		"}, '*')</script>"
+	page := "<!doctype html><meta charset=utf-8><script>sessionStorage.setItem('tt-test', '1');" +
+		"opener.postMessage({ttTestCode: " + string(code) + "}, '*')</script>"
 	wb.serve(w, "loader.html", "text/html; charset=utf-8", []byte(page))
 }
