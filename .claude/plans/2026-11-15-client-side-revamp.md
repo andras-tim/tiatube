@@ -74,14 +74,13 @@ the most possible work in the browser.
   a muted "download again" link, the top 3 quality levels, the browser-built ZIP (stored, UTF-8 names, UT extra field;
   ZIP64 is not implemented, so the limit is 4 GB), EXIF + XMP in the JPEGs of a Facebook post, `showSaveFilePicker`
   with a Blob fallback.
-- Changed: on YouTube above 1080p, MP4 is no longer disabled but made by the H.264 transcode (VP9/AV1 does not fit an
-  MP4 that plays everywhere); the option is marked as slow, and MKV is the recommended choice there.
+- Kept: on YouTube above 1080p, MP4 stays disabled (YouTube has H.264 up to 1080p only, and there is no video
+  transcode, see Decisions 2026-11-16); MKV is the choice there.
 
 ### Facebook video quality
 
-The best quality is the default: the HD track, which is AV1 (smaller and sharper than the H.264 SD track). The window
-offers "H.264 (compatible)" as an option for older devices: the server transcodes the HD track to H.264, through the
-transcode queue.
+The best quality is the default: the HD track, which is AV1 (smaller and sharper than the H.264 SD track). For older
+devices the window offers the SD track (H.264). A transcode of the HD track to H.264 is deferred (Decisions 2026-11-16).
 
 ### Playlist selection (new)
 
@@ -103,7 +102,7 @@ dropped: it would only measure ffmpeg.
 API: the PoC's (`/api/job`, `/api/frag`, `/api/finish`, `/api/status`, `/api/file`), plus:
 
 - **Two queues**:
-  - transcode (MP3, H.264): 1 at a time;
+  - transcode (audio only: MP3, and AAC for an MP4 whose audio is not AAC): 1 at a time;
   - remux (`-c copy`, MKV/MP4/M4A/Opus): a few at a time (configurable, default 2).
 
   A waiting job reports its position ("Sorban: 2."), the window shows it.
@@ -116,7 +115,7 @@ API: the PoC's (`/api/job`, `/api/frag`, `/api/finish`, `/api/status`, `/api/fil
   - total temp space: a setting of the deployment; the compose example uses 24 GiB (4 jobs: 1 transcode, 2 remux,
     1 being received);
   - job TTL: 6 hours after the job is done.
-- **H.264 transcode** (`libx264`) for an MP4 that plays everywhere. It is slow: a 2-hour 1080p video can take hours on a
+- **H.264 transcode, deferred (Decisions 2026-11-16)**: `libx264` for an MP4 that plays everywhere. It is slow: a 2-hour 1080p video can take hours on a
   small server CPU, so the preset and quality are chosen by measurement in milestone 3, and the window shows the queue
   position and an estimate of the remaining time.
 - **A transcode option is never the default**: the window marks every option that needs a transcode as slow, and
@@ -199,8 +198,8 @@ screenshots except `downloaded.png`. Git history and the old tags stay; the old 
 
 In a real desktop Chrome, logged in where the site needs it:
 
-- YouTube: video as MP3, as MKV, as MP4 (≤ 1080p remux, above 1080p transcode); a Shorts page.
-- Facebook: a video as HD (AV1) and as H.264 (transcode), a reel, a post with several photos and a video (ZIP: names, EXIF, XMP).
+- YouTube: video as MP3, as MKV, as MP4 (≤ 1080p remux; above 1080p MP4 is disabled); a Shorts page.
+- Facebook: a video as HD (AV1) and as SD (H.264), a reel, a post with several photos and a video (ZIP: names, EXIF, XMP).
 - tiaWeb: a page with one plain video file; a page with several videos.
 - videa: each quality of one video.
 - An unsupported page: the info window.
@@ -218,8 +217,7 @@ In a real desktop Chrome, logged in where the site needs it:
     second run in the same window shows the "újra letöltés" link instead. Playlists avoid it with one ZIP.
   - videa.hu has no public playlists (no playlist pages or links found, a web search neither), so tiaVidea has no
     playlist choice.
-  - The H.264 transcode (Facebook HD to H.264, YouTube MP4 above 1080p) is not built yet: it waits for the open question
-    on the transcode formats. Until then YouTube keeps MP4 disabled above 1080p.
+  - No video transcode was built: it is deferred (Decisions 2026-11-16).
 
 ## Decisions
 
@@ -236,9 +234,17 @@ In a real desktop Chrome, logged in where the site needs it:
 - 2026-11-15, the server sends status codes, no UI text; the window owns every Hungarian string.
 - 2026-11-15, preview image: the client sends candidates, best first (YouTube has no `maxresdefault` for old
   videos); the server takes the first one an allowlisted host serves.
+- 2026-11-16, no video transcode for now (owner's decision); it supersedes the two 2026-11-15 decisions on the
+  Facebook H.264 transcode and the YouTube MP4 above 1080p. The server re-encodes audio only (MP3, AAC). The UI
+  proposal for a later round, so it is not designed again:
+  - one rule on every site: MP4 = H.264 (copied when the source is H.264, else transcoded, slow), MKV = the original
+    codec, never transcoded; the window tells slow from the codec of the chosen quality, so `mp4Max` goes;
+  - a slow MP4 gets a "lassú" tag and MKV "ajánlott", MKV is then the default, and a warning explains the choice;
+  - the run shows the queue position and an "Újrakódolás H.264-re" step with a remaining time from the measured ffmpeg
+    speed; no estimate before the start (the server CPU differs per deployment);
+  - open then: whether Facebook HD becomes MKV by default, and whether a slow choice asks for a confirmation.
 
 ## Open questions
 
-1. **Supported transcode formats**: which outputs the server transcodes to (today: MP3, H.264), and with what
-   settings. To be discussed with the owner before the transcode work of milestone 3.
+1. **Later, not in this plan**: a video transcode (see Decisions 2026-11-16).
 2. **Later, not in this plan**: HLS/DASH streams in tiaWeb (today only plain files), more sites.
