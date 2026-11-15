@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased][unreleased]
+### Removed
+- The server-side downloader (PHP, youtube-dl): the video sites block downloads from servers
 
 
 ## [2.1.0] - 2022-05-25
