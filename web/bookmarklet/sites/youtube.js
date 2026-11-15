@@ -17,8 +17,7 @@ export class TiaTube extends TiaWeb {
     const vd = p.getVideoData(), id = vd.video_id;
     return { player: p, videoId: id, title: vd.title || id, author: vd.author || '', dur: p.getDuration(),
       url: `https://www.youtube.com/watch?v=${id}`, ts: publishTime(p, id),
-      // old videos have no maxres picture
-      thumbs: ['maxresdefault', 'hqdefault'].map((q) => `https://i.ytimg.com/vi/${id}/${q}.jpg`) };
+      thumbs: thumbsOf(id), playlist: playlistOf(p) };
   }
 
   found() { return !!this.media; }
@@ -26,7 +25,7 @@ export class TiaTube extends TiaWeb {
   hello() {
     const m = this.media;
     return { videoId: m.videoId, title: m.title, url: m.url, author: m.author, ts: m.ts, duration: m.dur,
-      thumbs: m.thumbs, levels: m.player.getAvailableQualityLevels() };
+      thumbs: m.thumbs, levels: m.player.getAvailableQualityLevels(), playlist: m.playlist };
   }
 
   prepare() {
@@ -36,18 +35,22 @@ export class TiaTube extends TiaWeb {
     hookOnce();
   }
 
+  // one video: the page's, or another item of its playlist; the window starts the items one after the other
   start(opts) {
     const p = this.media.player;
-    this.dur = this.media.dur;
+    this.target = opts.videoId || this.media.videoId;
+    this.dur = opts.duration || this.media.dur;
+    this.bufs = [];
+    this.done = false;
     // MP4: H.264 + AAC, so it is copied, not re-encoded; audio only: the smallest video, the capture is faster
     this.block = opts.what === 'video' && opts.format === 'mp4' ? ['av01', 'vp09', 'vp9', 'opus'] : [];
     this.quality = opts.what === 'video' ? opts.quality : 'tiny';
     this.say('indítás...');
     const v = p.querySelector('video');
-    this.was = v ? { muted: v.muted, rate: v.playbackRate } : null;
+    if (!this.was && v) this.was = { muted: v.muted, rate: v.playbackRate };
     const q = () => p.setPlaybackQualityRange && p.setPlaybackQualityRange(this.quality, this.quality);
     q();
-    p.loadVideoById({ videoId: this.media.videoId, startSeconds: 0 });
+    p.loadVideoById({ videoId: this.target, startSeconds: 0 });
     q();
     this.timer = setInterval(() => this.tick(), 500);
   }
@@ -94,6 +97,8 @@ export class TiaTube extends TiaWeb {
       this.say('reklám...');
       return;
     }
+    // until the player has switched to the video, its duration and buffers are the previous one's
+    if (p.getVideoData().video_id !== this.target) return;
     this.dur = p.getDuration() || this.dur;
     const video = this.opts.what === 'video';
     const pct = this.dur ? Math.min(100, (100 * v.currentTime) / this.dur) : 0;
@@ -121,9 +126,34 @@ export class TiaTube extends TiaWeb {
     await Promise.all(this.bufs.map((b) => b.chain));
     const ms = {};
     for (const b of this.bufs) ms[b.msId] = b.msDur;
-    this.post({ type: MSG.END, ms, duration: this.dur });
+    this.capturing = false;
+    this.post({ type: MSG.END, ms, duration: this.dur, videoId: this.target });
     this.show('kész, a többi a tiaTube ablakban');
   }
+}
+
+// old videos have no maxres picture
+const thumbsOf = (id) => ['maxresdefault', 'hqdefault'].map((q) => `https://i.ytimg.com/vi/${id}/${q}.jpg`);
+
+const seconds = (t) => (t || '').split(':').reduce((a, x) => a * 60 + (Number(x) || 0), 0);
+
+// the open playlist: its items in order, with title and duration from the side panel; null without one
+function playlistOf(p) {
+  const ids = p.getPlaylist?.() || [];
+  if (ids.length < 2) return null;
+  const panel = new Map();
+  for (const x of document.querySelectorAll('ytd-playlist-panel-video-renderer')) {
+    let id = null;
+    try { id = new URL(x.querySelector('a')?.href).searchParams.get('v'); } catch (e) { /* no link */ }
+    if (id) {
+      panel.set(id, { title: x.querySelector('#video-title')?.textContent.trim() || id,
+        dur: seconds(x.querySelector('badge-shape, #time-status #text')?.textContent.trim()) });
+    }
+  }
+  let title = '';
+  try { title = window.ytInitialData.contents.twoColumnWatchNextResults.playlist.playlist.title; } catch (e) { /* none */ }
+  return { id: p.getPlaylistId?.() || '', title: title || 'Lejátszási lista',
+    items: ids.map((id) => ({ id, thumbs: thumbsOf(id), ...(panel.get(id) || { title: id, dur: 0 }) })) };
 }
 
 // the hooks are installed once per page; they act only while the current run captures

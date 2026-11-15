@@ -69,3 +69,11 @@ form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 /* what tiaTube can do: for a page without a video, or a window opened by hand */
 #info { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 #info p { margin: 0; }
+/* the items of an open playlist */
+.plist { display: flex; flex-direction: column; gap: 2px; max-height: 150px; overflow-y: auto; background: var(--card);
+  border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; font-size: 13px; }
+.plist .head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); padding: 2px 0 4px; }
+.plist .head a { color: var(--c); cursor: pointer; }
+.plist label { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; cursor: pointer; }
+.plist label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plist label small { color: var(--muted); font-variant-numeric: tabular-nums; }

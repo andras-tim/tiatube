@@ -23,9 +23,12 @@ const preview = () => {
   const v = i.kind === 'web' && web.selected();
   const ext = i.kind === 'web' ? (v ? `.${web.ext(v)}` : '') : i.kind === 'post' ? '.zip' : what() === 'video'
     ? `.${val('format')}` : val('format') === 'mp3' ? '.mp3' : '.m4a / .opus';
-  const pre = prefixOf(i), id = i.kind === 'web' ? i.host : i.videoId;
+  const list = picked().length > 1;
+  const pre = list ? stamp(Date.now() / 1000, val('dfmt') === 'none' ? 'none' : 'date') : prefixOf(i);
+  const id = list ? i.playlist.id : i.kind === 'web' ? i.host : i.videoId;
   // the name as the flows make it (see baseName), with its parts marked
-  const parts = [el('span', 'pre', pre), ' ', `${safeName(i.title)} `, el('span', 'id', `[${id}]`), el('span', 'ext', ext)];
+  const parts = [el('span', 'pre', pre), ' ', `${safeName(list ? i.playlist.title : i.title)} `, el('span', 'id', `[${id}]`),
+    el('span', 'ext', list ? '.zip' : ext)];
   $('fname').replaceChildren(...(pre ? parts : parts.slice(2)));
 };
 $('opts').addEventListener('change', preview);
@@ -131,6 +134,46 @@ $('what').addEventListener('change', fillFormats);
 cardSet('what', [['audio', 'i-audio', 'Csak hang'], ['video', 'i-video', 'Kép és hang']], 'audio');
 fillFormats();
 
+// ---- an open playlist: its items to pick, the page's video picked first ----
+let listShown = false;
+const showPlaylist = (pl, current) => {
+  if (listShown || !pl) return;
+  listShown = true;
+  const all = el('a', '', 'mind'), one = el('a', '', 'csak ez');
+  const count = el('span');
+  const head = el('div', 'head');
+  const links = el('span');
+  links.append(all, ' · ', one);
+  head.append(count, links);
+  const rows = pl.items.map((it) => {
+    const row = el('label'), box = el('input');
+    box.type = 'checkbox';
+    box.checked = it.id === current;
+    box.dataset.id = it.id;
+    row.append(box, el('span', '', it.title), el('small', '', mmss(it.dur)));
+    return row;
+  });
+  const recount = () => { count.textContent = `Lejátszási lista: ${picked().length} / ${pl.items.length} kijelölve`; };
+  const set = (f) => {
+    for (const r of rows) r.firstChild.checked = f(r.firstChild.dataset.id);
+    recount();
+    preview();
+  };
+  all.onclick = () => set(() => true);
+  one.onclick = () => set((id) => id === current);
+  $('plist').replaceChildren(head, ...rows);
+  $('plist').addEventListener('change', recount);
+  $('plist').hidden = false;
+  recount();
+};
+// the picked playlist items in the playlist's order
+const picked = () => {
+  const pl = st.info?.playlist;
+  if (!pl) return [];
+  const ids = new Set([...$('plist').querySelectorAll('input:checked')].map((b) => b.dataset.id));
+  return pl.items.filter((it) => ids.has(it.id));
+};
+
 // ---- the conversation with the video tab ----
 const onHello = (m) => {
   st.info = m;
@@ -142,6 +185,7 @@ const onHello = (m) => {
   } else {
     setMeta([mmss(m.duration), stamp(m.ts, 'date'), m.author]);
     fillQuality(m.levels || []);
+    showPlaylist(m.playlist, m.videoId);
   }
   showDates();
   preview();
@@ -209,7 +253,7 @@ $('vlist').addEventListener('click', (ev) => {
 });
 $('opts').onsubmit = (ev) => {
   ev.preventDefault();
-  ({ post: post.start, web: web.start })[st.info?.kind]?.() ?? server.start();
+  ({ post: post.start, web: web.start })[st.info?.kind]?.() ?? server.start(st.info?.playlist ? picked() : null);
 };
 $('cancel').onclick = () => fail(new Error('megszakítottad'));
 // a closed window leaves no job behind on the server

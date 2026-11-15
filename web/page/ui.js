@@ -77,6 +77,7 @@ const left = (k, goal) => {
 const human = (s) => (s < 10 ? 'pár mp' : s < 60 ? `kb. ${Math.ceil(s / 5) * 5} mp`
   : s < 3600 ? `kb. ${Math.round(s / 60)} perc` : `kb. ${Math.floor(s / 3600)} óra ${Math.round((s % 3600) / 60)} perc`);
 const estimate = () => {
+  if (st.mode === 'list') return null;
   if (st.mode === 'post' || st.mode === 'web') return st.end ? null : left('cap', 1);
   if (st.finished) return left('srv', 100);
   if (!st.job) return null;
