@@ -179,16 +179,17 @@ screenshots except `downloaded.png`. Git history and the old tags stay; the old 
    - Copy the PoC sources (bookmarklet, window, server, logo generator) into the work branch, outside the final
      layout, so they no longer live only in a temporary directory. Test helpers with captured page data stay out.
    - Remove the old files, add AGENTS.md (the rules above), new README skeleton, `sites.json`.
-2. **Bundled frontend, same behavior as the PoC**
-   - Split the bookmarklet into tiaWeb core + site subclasses, the window into common + per-site parts, esbuild in
-     Docker. No new features: every PoC flow must work the same (test matrix below).
-3. **Go backend**
+2. **Go backend, Makefile, Docker, CI**
    - Port of the PoC server with the queues, cancel, limits, streaming, allowlist; tests. The PoC Python server is
      deleted at the end of this milestone.
+   - The Makefile is the one interface for building, testing and running, locally and in GitHub CI.
+3. **Bundled frontend, same behavior as the PoC**
+   - Split the bookmarklet into tiaWeb core + site subclasses, the window into common + per-site parts, esbuild in
+     Docker. No new features: every PoC flow must work the same (test matrix below).
 4. **Install page and logos**
    - Background, overlay, install window; logo generator in `tools/logo/`; tiaVidea logo and color.
 5. **Docker image**
-   - Multi-stage build, non-root runtime, compose example, README setup section.
+   - Compose example, README setup section (the image itself comes with milestone 2).
 6. **Playlist selection**
    - YouTube and videa: research, then implementation in the site subclasses (selection UI from tiaWeb).
 7. **Release 3.0.0**
@@ -213,6 +214,13 @@ In a real desktop Chrome, logged in where the site needs it:
 - 2026-11-15, limits: 6 GiB max job size, TTL 6 hours after done; the total temp space is set per deployment.
 - 2026-11-15, YouTube MP4 above 1080p: offered through the H.264 transcode, marked as slow; MKV (no transcode) is the
   recommended choice there.
+- 2026-11-15, order: the Go backend came before the frontend split. It was tested end to end with the prototype
+  window, so the split is tested once, against the final server.
+- 2026-11-15, the Makefile is the one interface for building, testing and running (owner's request); GitHub CI runs
+  the same targets.
+- 2026-11-15, the server sends status codes, no UI text; the window owns every Hungarian string.
+- 2026-11-15, preview image: the client sends candidates, best first (YouTube has no `maxresdefault` for old
+  videos); the server takes the first one an allowlisted host serves.
 
 ## Open questions
 
