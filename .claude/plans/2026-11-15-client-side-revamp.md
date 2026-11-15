@@ -216,4 +216,6 @@ In a real desktop Chrome, logged in where the site needs it:
 
 ## Open questions
 
-1. **Later, not in this plan**: HLS/DASH streams in tiaWeb (today only plain files), more sites.
+1. **Supported transcode formats**: which outputs the server transcodes to (today: MP3, H.264), and with what
+   settings. To be discussed with the owner before the transcode work of milestone 3.
+2. **Later, not in this plan**: HLS/DASH streams in tiaWeb (today only plain files), more sites.
