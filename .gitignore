@@ -1,6 +1,5 @@
 .idea/
 __pycache__/
-poc/data/
 dist/
 server/web/*
 !server/web/.keep

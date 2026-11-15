@@ -10,11 +10,12 @@ small server muxes and transcodes with ffmpeg only where a browser cannot. The p
 | path | what |
 |---|---|
 | `sites.json` | the sites: key, name, logo word, color, hosts |
-| `poc/` | the working prototype; split into the components below step by step, then removed |
 | `server/` | Go service; embeds the web files |
-| `web/bookmarklet/` | `core/` (tiaWeb) and `sites/` (planned) |
-| `web/page/` | the tiaTube window (planned) |
-| `web/install/` | install page over the blurred old page (planned) |
+| `web/shared/` | what the bookmarklet and the window share: the message protocol, the sites, bytes |
+| `web/bookmarklet/` | `core/tiaweb.js` (the base class), `core/capture.js` (media for the server), `sites/` (subclasses) |
+| `web/page/` | the tiaTube window: `main.js` (form, messages), `flows/` (server, post, web), `parts.js` (per site) |
+| `web/install/` | install page (planned: over the blurred old page) |
+| `tools/build-web.sh` | bundles `web/` with esbuild into the files the server embeds (run in the Docker build) |
 | `tools/assets/` | generators of `assets/` (logos from `sites.json`, install page background); Python, run by `make assets` |
 | `assets/` | generated, committed; `make check-assets` (part of `make ci`) fails when it is stale |
 | `screenshots/downloaded.png` | the old page; source of the install page background |
@@ -31,11 +32,13 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
   site needs goes into tiaWeb when another site could use it, otherwise it stays in the site's class.
 - The window follows the same split: a common UI and a small per-site part.
 - A site's name, color, logo word and hosts live in `sites.json` only; everything else reads them from there.
+- The window's code has no site names in its logic: what differs per site is in `web/page/parts.js`.
 
 ### No duplication, in any language
 
-- A rule lives in one place. File names are sanitized on the server only; the message protocol's names and limits are
-  defined in one shared JS module.
+- A rule lives in one place. File names are made in the window (`web/page/names.js`; the server only refuses an unsafe
+  name); the message protocol's names and limits are in `web/shared/protocol.js`.
+- The server sends status codes, never UI text: the window owns every Hungarian string.
 - A value the server and the client must agree on (e.g. a size limit) comes from the server's API response; the
   client does not hardcode it.
 
@@ -61,7 +64,9 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
   test runs the bookmarklet with the loader: on the video page, with CSP bypassed (CDP `Page.setBypassCSP` and a
   reload; YouTube's Trusted Types block `eval`), add a `message` listener that evaluates `e.data.ttTestCode`, then
   `window.open('<origin>/api/test/loader', 'tiatube')` with a user gesture. The loader sends the bookmarklet code, and
-  the bookmarklet reuses that window. A plain `fetch` of the code from the video page waits on Chrome's local network
+  the bookmarklet reuses that window; the loader also sets test mode for it (`sessionStorage` `tt-test`), so a file
+  built in the window goes to `/api/debug-zip` instead of a save dialog. Close that window before the next test:
+  Chrome allows only the first automatic download of a window. A plain `fetch` of the code from the video page waits on Chrome's local network
   access permission.
 - Testing a capture needs a real desktop Chrome, logged in where the site needs it; no headless browser.
 
