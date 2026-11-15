@@ -12,22 +12,31 @@
 <body>
 <!--LOGOS-->
 <!-- the old tiaTube page (2015-2022), blurred: a memory behind the new one -->
-<div class="memory" aria-hidden="true"></div>
+<div class="memory" aria-hidden="true"><div class="old"></div></div>
 <main class="card">
-  <div class="nav"><div class="vt">tiaTube</div><div class="meta">videó, zene és fotó abból, amit épp nézel</div></div>
+  <div class="nav"><div class="vt" id="hello">Szia!</div><div class="meta">A modern videóletöltő</div></div>
   <svg class="logo" viewBox="0 0 100 100" role="img" aria-label="tiaTube"><use href="#logo-tiatube"/></svg>
   <div class="body">
-    <p>Húzd ezt a gombot a könyvjelzősávra:</p>
-    <p><a class="btn bm" href="__TT_BOOKMARKLET_HREF__" title="Húzd a könyvjelzősávra">tiaTube</a></p>
+    <p>A régi tiaTube már csak a háttérben pihen: évekig hűségesen letöltött neked mindent, de a videós oldalakkal
+      már nem tudta tartani a lépést. Az új tiaTube a te böngésződben dolgozik, így gyorsabb és megbízhatóbb. Csak egy
+      speckó könyvjelző kell hozzá, amire a videó oldalán tartózkodva rákattintasz, és kész!</p>
+    <div class="install">
+      <a class="btn bm" href="__TT_BOOKMARKLET_HREF__" title="Húzd a könyvjelzősávra">tiaTube</a>
+      <p><b>Húzd fel a gombot a könyvjelzősávra.</b><br>
+        <span class="hint">Nem látod a sávot? <kbd id="bar-keys">Ctrl+Shift+B</kbd> megjeleníti.</span></p>
+    </div>
     <ol class="how">
       <li>Nyiss meg egy videót vagy egy Facebook-bejegyzést.</li>
       <li>Kattints a tiaTube könyvjelzőre.</li>
-      <li>A felugró ablakban válaszd ki, mit kérsz.</li>
+      <li>A felugró ablakban szabd testre a folyamatot, majd indulhat a letöltés.</li>
     </ol>
-    <ul class="sites" id="sites"></ul>
     <p class="warn">Ha a böngésző letiltja a felugró ablakot, engedélyezd azon az oldalon, ahol a könyvjelzőre kattintasz.</p>
   </div>
 </main>
+<!-- from the button up to the bookmarks bar; drawn by main.js -->
+<svg class="arrow" id="arrow" aria-hidden="true"><defs><marker id="head" viewBox="0 0 10 10" refX="5" refY="5"
+  markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z"/></marker></defs>
+  <path id="arrow-path" marker-end="url(#head)"/></svg>
 <script>/*SCRIPT*/</script>
 </body>
 </html>

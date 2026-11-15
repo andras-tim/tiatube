@@ -23,7 +23,7 @@ export const siteItems = () => Object.keys(SITES).map((k) => {
 // the main idea
 export const gist = () => {
   const p = el('p');
-  p.append(el('b', 'A lényeg:'), ' a letöltést a te böngésződ végzi. A szerver csak ott segít, ahol muszáj (összefűzés,'
-    + ' MP3); a bejegyzések ZIP-je és a más oldalakról mentett videó teljesen nálad készül.');
+  p.append(el('b', 'A lényeg:'), ' a letöltést a te böngésződ végzi. A szerver csak szükség esetén kerül a képbe'
+    + ' (pl. remux, MP3), de még a bejegyzések ZIP-je is kliensoldalon, azaz a te böngésződben készül.');
   return p;
 };
