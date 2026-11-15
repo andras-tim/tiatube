@@ -14,11 +14,11 @@ small server muxes and transcodes with ffmpeg only where a browser cannot. The p
 | `web/shared/` | what the bookmarklet and the window share: the message protocol, the sites, bytes |
 | `web/bookmarklet/` | `core/tiaweb.js` (the base class), `core/capture.js` (media for the server), `sites/` (subclasses) |
 | `web/page/` | the tiaTube window: `main.js` (form, messages), `flows/` (server, post, web), `parts.js` (per site) |
-| `web/install/` | install page (planned: over the blurred old page) |
+| `web/install/` | install page, over the blurred old page |
 | `tools/build-web.sh` | bundles `web/` with esbuild into the files the server embeds (run in the Docker build) |
 | `tools/assets/` | generators of `assets/` (logos from `sites.json`, install page background); Python, run by `make assets` |
 | `assets/` | generated, committed; `make check-assets` (part of `make ci`) fails when it is stale |
-| `screenshots/downloaded.png` | the old page; source of the install page background |
+| `screenshots/` | `downloaded.png`: the old page, source of the install page background; `install.jpg`: the README's |
 
 The UI is in Hungarian; everything else (code, comments, docs, commit messages) is in English.
 
@@ -64,7 +64,7 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
   |---|---|
   | `make test` | gofmt, go vet, Go tests with ffmpeg (race detector on) |
   | `make image` | the runtime image `tiatube:dev` |
-  | `make run` / `make run-test` | the image on `http://127.0.0.1:8765/install`, read-only, non-root; `run-test` turns on test mode |
+  | `make run` / `make run-test` | the image on `http://127.0.0.1:8765/`, read-only, non-root; `run-test` turns on test mode |
   | `make stop` | stops it |
   | `make web` | the bundled web files into `dist/web`, to look at them |
 

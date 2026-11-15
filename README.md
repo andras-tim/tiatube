@@ -6,9 +6,10 @@
 
 Save videos, music and photos from the page you are watching, in Hungarian.
 
-> **Work in progress:** version 3 is being built on the `devel` branch. The last release of the old, server-side
-> version is [v2.1.0](https://github.com/andras-tim/tiatube/tree/v2.1.0); it no longer works, because the video sites
-> block downloads from servers.
+![The install page](screenshots/install.jpg)
+
+Version 3 is a rewrite. The old, server-side version ([v2.1.0](https://github.com/andras-tim/tiatube/tree/v2.1.0))
+no longer works, because the video sites block downloads from servers; its page is the blurred background above.
 
 ## How it works
 
@@ -16,15 +17,17 @@ Version 3 lets the user's own browser do as much of the work as possible:
 
 - a **bookmarklet** runs on the video page, finds the media and passes it to the tiaTube window;
 - the **tiaTube window** asks what to save, shows the progress and saves the result;
-- the **server** only muxes and transcodes with ffmpeg where a browser cannot do it well. It never downloads from a
-  video site.
+- the **server** only muxes with ffmpeg and encodes audio (MP3) where a browser cannot do it well. It never
+  downloads from a video site.
+
+When a site's own class finds nothing on a page, tiaWeb looks for any video there.
 
 | | site | what |
 |---|---|---|
-| tiaWeb | any site with an HTML5 video | plain video files, straight from the site |
-| tiaTube | YouTube | MP3, MKV, MP4 |
+| tiaTube | YouTube | MP3, MKV, MP4 (up to 1080p); a playlist in a ZIP |
 | tiaFace | Facebook | videos, reels, all photos and videos of a post in a ZIP |
 | tiaVidea | videa.hu | every quality the player offers |
+| tiaWeb | any other site with an HTML5 video | plain video files, straight from the site |
 
 ## Running it
 
@@ -36,6 +39,12 @@ HTTPS pages), so it goes behind a reverse proxy that terminates TLS.
 3. Open the public URL and drag the tiaTube button to the bookmarks bar.
 
 The server keeps nothing but the jobs in progress; finished files are deleted after a few hours.
+
+Anyone who can open the public URL can use the server. The server refuses requests that other sites' pages send
+through their visitors' browsers; to limit who may use it, put the address behind the reverse proxy's authentication.
+
+A bookmarklet stays as it was dragged, while the window always comes from the server: after an update the window
+asks for the new bookmarklet when the old one is outdated.
 
 | variable | default | |
 |---|---|---|

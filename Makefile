@@ -36,7 +36,7 @@ image:
 push: image
 	docker push $(IMAGE)
 
-## run: the image on http://127.0.0.1:$(PORT)/install, the way it runs in production (read-only, non-root)
+## run: the image on http://127.0.0.1:$(PORT)/, the way it runs in production (read-only, non-root)
 run: image
 	docker run --rm --init --name tiatube-dev --read-only -p 127.0.0.1:$(PORT):8765 -v tiatube-data:/data $(IMAGE)
 

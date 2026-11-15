@@ -4,6 +4,21 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased][unreleased]
+
+
+## [3.0.0] - 2026-11-16
+### Added
+- Client-side capture: a bookmarklet runs on the video page and opens the tiaTube window
+- Sites: YouTube (tiaTube), Facebook videos, reels and posts (tiaFace), videa.hu (tiaVidea), a plain video file on
+  any page (tiaWeb); when a site's class finds nothing, tiaWeb looks for any video on the page
+- YouTube playlists: the window offers the items, several of them go one after the other into a ZIP
+- Facebook posts: the photos and videos in one ZIP, with EXIF and XMP in the photos
+- A Go server that muxes with ffmpeg: a queue for audio encoding (one at a time) and one for muxing, size limits,
+  cancel, idle timeout, a cover image from an allowlist of image hosts
+- The window tells an outdated bookmarklet: a note for an older build, a refusal for another protocol
+- The server refuses POSTs that other sites' pages send through their visitors' browsers
+- An install page, the logos rendered from `sites.json`, a Docker image, a compose example, a Makefile and GitHub CI
+
 ### Removed
 - The server-side downloader (PHP, youtube-dl): the video sites block downloads from servers
 
@@ -51,7 +66,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Getting thumbnail for ID3 album art
 - Session based download cache
 
-[unreleased]: https://github.com/andras-tim/tiatube/compare/v2.1.0...HEAD
+[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/andras-tim/tiatube/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/andras-tim/tiatube/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/andras-tim/tiatube/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/andras-tim/tiatube/compare/v1.0.0...v1.1.0
