@@ -1,0 +1,30 @@
+{
+  "web": {
+    "name": "tiaWeb",
+    "word": "Web",
+    "color": "#1b7f86",
+    "logoWordWidth": null,
+    "hosts": []
+  },
+  "tube": {
+    "name": "tiaTube",
+    "word": "Tube",
+    "color": "#b3212b",
+    "logoWordWidth": 46.0,
+    "hosts": ["youtube.com", "youtu.be"]
+  },
+  "face": {
+    "name": "tiaFace",
+    "word": "Face",
+    "color": "#2d5aa8",
+    "logoWordWidth": 46.0,
+    "hosts": ["facebook.com"]
+  },
+  "videa": {
+    "name": "tiaVidea",
+    "word": "Videa",
+    "color": "#da122e",
+    "logoWordWidth": null,
+    "hosts": ["videa.hu"]
+  }
+}
