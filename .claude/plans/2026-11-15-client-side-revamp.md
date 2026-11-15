@@ -1,6 +1,6 @@
 # tiaTube 3: client-side capture
 
-Status: approved 2026-11-15. Milestones run in order. Each ends with a commit; nothing is pushed until the owner
+Status: approved 2026-11-15; milestones 1-6 done (see Progress), 7 waits for the owner. Milestones run in order. Each ends with a commit; nothing is pushed until the owner
 asks for it.
 
 ## Goal
@@ -205,6 +205,21 @@ In a real desktop Chrome, logged in where the site needs it:
 - videa: each quality of one video.
 - An unsupported page: the info window.
 - Two jobs in parallel from two windows: the second one waits in the transcode queue and shows its position.
+
+## Progress
+
+- 2026-11-15, milestones 1-6 done on `devel` and tested in Chrome with the test matrix (YouTube MP3, MKV, a playlist
+  of two into a ZIP, cancel; Facebook video and post ZIP; videa sizes and cancel; a plain HTML5 video; an unsupported
+  page). Not pushed.
+- Order as done: 1, 2 (Go backend, Makefile, Docker, CI), 3 (frontend split), 4 (logos, background, install page),
+  5 (compose example, README), 6 (playlists).
+- Findings:
+  - Chrome starts only the first automatic download of a window; the bookmarklet reuses its window by name, so a
+    second run in the same window shows the "újra letöltés" link instead. Playlists avoid it with one ZIP.
+  - videa.hu has no public playlists (no playlist pages or links found, a web search neither), so tiaVidea has no
+    playlist choice.
+  - The H.264 transcode (Facebook HD to H.264, YouTube MP4 above 1080p) is not built yet: it waits for the open question
+    on the transcode formats. Until then YouTube keeps MP4 disabled above 1080p.
 
 ## Decisions
 
