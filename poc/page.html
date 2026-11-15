@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tiaTube</title>
+<script>
+  // the site comes in the URL (?s=yt|fb|post), so the first paint has the right logo and colour
+  (function () {
+    var s = new URLSearchParams(location.search).get('s');
+    if (s) document.documentElement.className = s === 'post' ? 'fb' : s;
+  })();
+</script>
+<style>
+  :root { --ink: #222; --muted: #666; --nav: #222; --bg: #f4f4f2; --card: #fff; --line: #dcdcd8; --ok: #2e8b3a; --bad: #b3212b;
+    --c: #b3212b; }
+  html.fb { --c: #2d5aa8; }
+  html.web { --c: #1b7f86; }
+  /* one logo per site, chosen by the class of the html element */
+  .logo use { display: none; }
+  html:not(.fb):not(.web) .logo .l-yt, html.fb .logo .l-fb, html.web .logo .l-web { display: inline; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  .win { min-height: 100%; position: relative; display: flex; flex-direction: column; }
+
+  /* the dark header names what is being saved; the logo sits on the joint of the header and the body */
+  .nav { min-height: 58px; background: var(--nav); color: #eee; padding: 8px 14px 8px 92px; flex: none; display: flex;
+    flex-direction: column; justify-content: center; gap: 1px; }
+  .vt { font-size: 15px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+  .meta { color: #bdbdbd; font-size: 13px; }
+  .logo { position: absolute; left: 14px; top: 10px; width: 66px; height: 66px; filter: drop-shadow(0 2px 3px #0004); }
+  .body { padding: 30px 16px 10px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
+
+  .btn { border: 0; border-radius: 10px; background: var(--c); color: #fff; font: inherit; font-weight: 700; padding: 10px 18px;
+    cursor: pointer; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.quiet { background: #8a8a86; }
+  .actions { margin-top: auto; display: flex; gap: 8px; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cards.three { grid-template-columns: 1fr 1fr 1fr; }
+  .card { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--card); border: 2px solid var(--line);
+    border-radius: 14px; padding: 10px 6px 8px; font: inherit; font-weight: 700; color: var(--muted); text-align: center; cursor: pointer; }
+  .card small { font-weight: 400; font-size: 12px; color: var(--muted); }
+  .card.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c); color: var(--ink); }
+  .card svg { width: 30px; height: 30px; fill: none; stroke: var(--c); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .card:not(.on) svg { filter: grayscale(1); opacity: .45; }
+
+  .row { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: center; }
+  .row > label { color: var(--muted); font-size: 13px; }
+  .seg { display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; color: var(--ink); text-align: center;
+    padding: 4px 6px; border-radius: 7px; white-space: nowrap; cursor: pointer; }
+  .seg button.on { background: var(--c); color: #fff; font-weight: 700; }
+  .seg button:disabled { color: #b0b0ac; cursor: default; }
+  .fname { background: var(--card); border: 1px dashed var(--line); border-radius: 10px; padding: 5px 9px;
+    font: 12px/1.35 ui-monospace, monospace; overflow-wrap: anywhere; }
+  .fname .pre { color: var(--c); font-weight: 700; }
+  .fname .id, .fname .ext { color: var(--muted); }
+
+  /* the run: a checklist with the done, running and waiting steps and their elapsed times */
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+  .steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+  .steps li .t { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .steps li.todo { color: #9a9a9a; }
+  .steps li.now { font-weight: 700; }
+  .steps li.err { color: var(--bad); font-weight: 700; }
+  .steps li .sub { grid-column: 2 / 4; font-weight: 400; display: flex; flex-direction: column; gap: 4px; }
+  .ico { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; }
+  .ico.ok { background: var(--ok); color: #fff; }
+  .ico.err { background: var(--bad); color: #fff; }
+  .ico.run { border: 3px solid var(--line); border-top-color: var(--c); animation: spin 1s linear infinite; }
+  .ico.todo { border: 2px solid #c8c8c4; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--c); }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.bad { color: var(--bad); }
+
+  .result { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px;
+    display: flex; flex-direction: column; gap: 4px; }
+  .result a { color: var(--c); font-weight: 700; overflow-wrap: anywhere; }
+  .result .ok { color: var(--ok); font-weight: 700; }
+  .result .bad { color: var(--bad); font-weight: 700; }
+  .result .retry { font-size: 12px; color: var(--muted); }
+  .result .retry a { color: var(--muted); font-weight: 400; }
+  /* tiaWeb: the videos of the page */
+  .vlist { display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; }
+  .vcard { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; background: var(--card);
+    border: 2px solid var(--line); border-radius: 12px; padding: 6px; font-size: 13px; color: var(--muted); }
+  .vcard.ok { cursor: pointer; }
+  .vcard.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c); color: var(--ink); }
+  .vthumb { width: 96px; height: 54px; border-radius: 6px; background: #222 center / cover no-repeat; }
+  .vtxt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .vtxt b { color: var(--ink); }
+  .vtxt a { color: var(--c); font-weight: 700; }
+  .vtxt .bad { color: var(--bad); }
+  /* what tiaTube can do: for a page without a video, or a window opened by hand */
+  #info { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+  #info p { margin: 0; }
+  .sites { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .sites li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; }
+  .sites svg { width: 34px; height: 34px; }
+  .sites span { color: var(--muted); font-size: 13px; }
+  .warn { font-size: 12px; color: #8a5a00; background: #fdf6e3; border: 1px solid #e0c58a; border-radius: 8px; padding: 6px 10px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo-tia-tube" viewBox="0 0 100 100">
+      <path d="M24 0H100V76A24 24 0 0 1 76 100H0V24A24 24 0 0 1 24 0Z" fill="#b3212b"/>
+      <path transform="translate(27.59 41.07)" d="M9.4 0Q7.2 0 5.95 -1.25Q4.7 -2.51 4.7 -4.7V-10.83H0.91V-14.36H4.7V-18.4H8.61V-14.36H13.96V-10.83H8.61V-4.7Q8.61 -3.52 9.79 -3.52H13.7V0ZM16.79 0V-3.55H21.75V-10.83H17.44V-14.36H25.4V-3.55H29.58V0ZM23.31 -16.63Q22.24 -16.63 21.6 -17.17Q20.96 -17.72 20.96 -18.66Q20.96 -19.6 21.6 -20.15Q22.24 -20.7 23.31 -20.7Q24.38 -20.7 25.02 -20.15Q25.66 -19.6 25.66 -18.66Q25.66 -17.72 25.02 -17.17Q24.38 -16.63 23.31 -16.63ZM35.9 0.26Q33.73 0.26 32.46 -0.91Q31.2 -2.09 31.2 -4.1Q31.2 -6.26 32.7 -7.43Q34.2 -8.59 37.02 -8.59H39.99V-9.66Q39.99 -10.49 39.41 -10.99Q38.82 -11.48 37.83 -11.48Q36.91 -11.48 36.31 -11.07Q35.71 -10.65 35.58 -9.92H31.8Q32.03 -12.08 33.69 -13.35Q35.35 -14.62 37.96 -14.62Q40.7 -14.62 42.3 -13.27Q43.91 -11.93 43.91 -9.66V0H40.13V-2.35H39.5L40.15 -3.26Q40.15 -1.64 38.99 -0.69Q37.83 0.26 35.9 0.26ZM37.36 -2.61Q38.51 -2.61 39.25 -3.22Q39.99 -3.84 39.99 -4.83V-6.37H37.1Q36.21 -6.37 35.66 -5.86Q35.11 -5.35 35.11 -4.52Q35.11 -3.63 35.71 -3.12Q36.31 -2.61 37.36 -2.61Z" fill="#fff"/>
+      <rect x="22.3" y="46.13" width="55.4" height="33.5" rx="6" fill="#fff"/>
+      <path transform="translate(27.34 73.48)" d="M3.43 0V-18.21H0.3V-21.46H10.66V-18.21H7.58V0ZM13.64 0.27Q12.76 0.27 12.18 -0.21Q11.59 -0.69 11.31 -1.48Q11.04 -2.28 11.04 -3.23V-15.32H14.82V-3.82Q14.82 -3.18 15.02 -2.85Q15.22 -2.52 15.74 -2.52Q16.04 -2.52 16.38 -2.69Q16.72 -2.86 17.07 -3.1V-15.32H20.85V0H17.07V-1.43Q16.32 -0.66 15.45 -0.2Q14.59 0.27 13.64 0.27ZM30.21 0.27Q29.41 0.27 28.66 -0.13Q27.91 -0.53 27.23 -1.17V0H23.45V-21.46H27.23V-14.18Q27.93 -14.84 28.71 -15.21Q29.48 -15.58 30.31 -15.58Q31.18 -15.58 31.78 -15.17Q32.39 -14.76 32.76 -14.07Q33.14 -13.38 33.29 -12.53Q33.44 -11.69 33.44 -10.81V-4.82Q33.44 -3.34 33.09 -2.2Q32.74 -1.06 32.02 -0.4Q31.31 0.27 30.21 0.27ZM28.53 -2.41Q28.98 -2.41 29.23 -2.72Q29.48 -3.02 29.57 -3.52Q29.66 -4.03 29.66 -4.64V-11.05Q29.66 -11.61 29.56 -12.06Q29.46 -12.51 29.22 -12.79Q28.98 -13.06 28.53 -13.06Q28.18 -13.06 27.86 -12.89Q27.53 -12.72 27.23 -12.48V-2.89Q27.53 -2.68 27.86 -2.54Q28.18 -2.41 28.53 -2.41ZM40.34 0.27Q38.74 0.27 37.67 -0.36Q36.59 -0.98 36.04 -2.19Q35.49 -3.39 35.49 -5.09V-10.23Q35.49 -11.98 36.04 -13.16Q36.59 -14.34 37.69 -14.96Q38.79 -15.58 40.34 -15.58Q42 -15.58 43.02 -14.95Q44.05 -14.31 44.54 -13.09Q45.02 -11.87 45.02 -10.12V-7.45H39.22V-4.48Q39.22 -3.82 39.36 -3.39Q39.49 -2.97 39.74 -2.8Q39.99 -2.62 40.37 -2.62Q40.72 -2.62 40.98 -2.8Q41.24 -2.97 41.37 -3.34Q41.5 -3.71 41.5 -4.32V-5.78H45V-4.5Q45 -2.17 43.8 -0.95Q42.6 0.27 40.34 0.27ZM39.22 -9.35H41.5V-10.87Q41.5 -11.53 41.37 -11.94Q41.24 -12.35 40.98 -12.52Q40.72 -12.69 40.32 -12.69Q39.94 -12.69 39.71 -12.51Q39.47 -12.32 39.34 -11.86Q39.22 -11.39 39.22 -10.55Z" fill="#b3212b"/>
+    </symbol>
+    <symbol id="logo-tia-face" viewBox="0 0 100 100">
+      <path d="M24 0H100V76A24 24 0 0 1 76 100H0V24A24 24 0 0 1 24 0Z" fill="#2d5aa8"/>
+      <path transform="translate(27.59 41.07)" d="M9.4 0Q7.2 0 5.95 -1.25Q4.7 -2.51 4.7 -4.7V-10.83H0.91V-14.36H4.7V-18.4H8.61V-14.36H13.96V-10.83H8.61V-4.7Q8.61 -3.52 9.79 -3.52H13.7V0ZM16.79 0V-3.55H21.75V-10.83H17.44V-14.36H25.4V-3.55H29.58V0ZM23.31 -16.63Q22.24 -16.63 21.6 -17.17Q20.96 -17.72 20.96 -18.66Q20.96 -19.6 21.6 -20.15Q22.24 -20.7 23.31 -20.7Q24.38 -20.7 25.02 -20.15Q25.66 -19.6 25.66 -18.66Q25.66 -17.72 25.02 -17.17Q24.38 -16.63 23.31 -16.63ZM35.9 0.26Q33.73 0.26 32.46 -0.91Q31.2 -2.09 31.2 -4.1Q31.2 -6.26 32.7 -7.43Q34.2 -8.59 37.02 -8.59H39.99V-9.66Q39.99 -10.49 39.41 -10.99Q38.82 -11.48 37.83 -11.48Q36.91 -11.48 36.31 -11.07Q35.71 -10.65 35.58 -9.92H31.8Q32.03 -12.08 33.69 -13.35Q35.35 -14.62 37.96 -14.62Q40.7 -14.62 42.3 -13.27Q43.91 -11.93 43.91 -9.66V0H40.13V-2.35H39.5L40.15 -3.26Q40.15 -1.64 38.99 -0.69Q37.83 0.26 35.9 0.26ZM37.36 -2.61Q38.51 -2.61 39.25 -3.22Q39.99 -3.84 39.99 -4.83V-6.37H37.1Q36.21 -6.37 35.66 -5.86Q35.11 -5.35 35.11 -4.52Q35.11 -3.63 35.71 -3.12Q36.31 -2.61 37.36 -2.61Z" fill="#fff"/>
+      <rect x="22.3" y="46.13" width="55.4" height="33.5" rx="6" fill="#fff"/>
+      <path transform="translate(26.71 73.48)" d="M1.59 0V-21.46H10.48V-18.5H5.88V-12.69H9.78V-9.65H5.88V0ZM14.46 0.27Q13.37 0.27 12.61 -0.29Q11.86 -0.85 11.47 -1.7Q11.08 -2.54 11.08 -3.44Q11.08 -4.88 11.62 -5.86Q12.17 -6.84 13.05 -7.5Q13.94 -8.16 15.03 -8.64Q16.12 -9.12 17.21 -9.51V-10.94Q17.21 -11.45 17.14 -11.82Q17.06 -12.19 16.84 -12.39Q16.62 -12.59 16.2 -12.59Q15.78 -12.59 15.56 -12.42Q15.34 -12.24 15.24 -11.91Q15.13 -11.58 15.13 -11.18L15.03 -10.12L11.34 -10.28Q11.47 -12.98 12.73 -14.28Q13.99 -15.58 16.54 -15.58Q18.83 -15.58 19.92 -14.3Q21.01 -13.01 21.01 -10.92V-3.79Q21.01 -2.89 21.05 -2.19Q21.09 -1.48 21.15 -0.94Q21.22 -0.4 21.27 0H17.73Q17.66 -0.58 17.55 -1.27Q17.45 -1.96 17.4 -2.2Q17.14 -1.25 16.41 -0.49Q15.68 0.27 14.46 0.27ZM15.89 -2.57Q16.17 -2.57 16.42 -2.7Q16.67 -2.84 16.88 -3.05Q17.08 -3.26 17.21 -3.44V-7.66Q16.67 -7.31 16.2 -6.98Q15.73 -6.65 15.39 -6.25Q15.06 -5.86 14.87 -5.38Q14.69 -4.9 14.69 -4.29Q14.69 -3.5 15 -3.03Q15.32 -2.57 15.89 -2.57ZM28.27 0.27Q26.6 0.27 25.48 -0.38Q24.37 -1.03 23.81 -2.23Q23.25 -3.42 23.25 -5.06V-10.23Q23.25 -11.95 23.81 -13.13Q24.37 -14.31 25.48 -14.95Q26.6 -15.58 28.27 -15.58Q29.88 -15.58 30.97 -15.07Q32.06 -14.55 32.6 -13.52Q33.13 -12.48 33.13 -10.92V-9.46H29.38V-11.02Q29.38 -11.71 29.27 -12.1Q29.15 -12.48 28.9 -12.64Q28.66 -12.8 28.27 -12.8Q27.88 -12.8 27.64 -12.6Q27.41 -12.4 27.3 -11.94Q27.2 -11.47 27.2 -10.65V-4.64Q27.2 -3.39 27.47 -2.95Q27.75 -2.52 28.29 -2.52Q28.71 -2.52 28.94 -2.7Q29.18 -2.89 29.28 -3.29Q29.38 -3.68 29.38 -4.29V-6.15H33.13V-4.48Q33.13 -2.94 32.58 -1.87Q32.04 -0.79 30.94 -0.26Q29.85 0.27 28.27 0.27ZM40.12 0.27Q38.46 0.27 37.34 -0.36Q36.22 -0.98 35.65 -2.19Q35.08 -3.39 35.08 -5.09V-10.23Q35.08 -11.98 35.65 -13.16Q36.22 -14.34 37.37 -14.96Q38.51 -15.58 40.12 -15.58Q41.84 -15.58 42.91 -14.95Q43.97 -14.31 44.48 -13.09Q44.99 -11.87 44.99 -10.12V-7.45H38.95V-4.48Q38.95 -3.82 39.1 -3.39Q39.24 -2.97 39.5 -2.8Q39.76 -2.62 40.15 -2.62Q40.51 -2.62 40.79 -2.8Q41.06 -2.97 41.19 -3.34Q41.32 -3.71 41.32 -4.32V-5.78H44.96V-4.5Q44.96 -2.17 43.71 -0.95Q42.46 0.27 40.12 0.27ZM38.95 -9.35H41.32V-10.87Q41.32 -11.53 41.19 -11.94Q41.06 -12.35 40.79 -12.52Q40.51 -12.69 40.1 -12.69Q39.71 -12.69 39.46 -12.51Q39.21 -12.32 39.08 -11.86Q38.95 -11.39 38.95 -10.55Z" fill="#2d5aa8"/>
+    </symbol>
+    <symbol id="logo-tia-web" viewBox="0 0 100 100">
+      <path d="M24 0H100V76A24 24 0 0 1 76 100H0V24A24 24 0 0 1 24 0Z" fill="#1b7f86"/>
+      <path transform="translate(27.59 41.07)" d="M9.4 0Q7.2 0 5.95 -1.25Q4.7 -2.51 4.7 -4.7V-10.83H0.91V-14.36H4.7V-18.4H8.61V-14.36H13.96V-10.83H8.61V-4.7Q8.61 -3.52 9.79 -3.52H13.7V0ZM16.79 0V-3.55H21.75V-10.83H17.44V-14.36H25.4V-3.55H29.58V0ZM23.31 -16.63Q22.24 -16.63 21.6 -17.17Q20.96 -17.72 20.96 -18.66Q20.96 -19.6 21.6 -20.15Q22.24 -20.7 23.31 -20.7Q24.38 -20.7 25.02 -20.15Q25.66 -19.6 25.66 -18.66Q25.66 -17.72 25.02 -17.17Q24.38 -16.63 23.31 -16.63ZM35.9 0.26Q33.73 0.26 32.46 -0.91Q31.2 -2.09 31.2 -4.1Q31.2 -6.26 32.7 -7.43Q34.2 -8.59 37.02 -8.59H39.99V-9.66Q39.99 -10.49 39.41 -10.99Q38.82 -11.48 37.83 -11.48Q36.91 -11.48 36.31 -11.07Q35.71 -10.65 35.58 -9.92H31.8Q32.03 -12.08 33.69 -13.35Q35.35 -14.62 37.96 -14.62Q40.7 -14.62 42.3 -13.27Q43.91 -11.93 43.91 -9.66V0H40.13V-2.35H39.5L40.15 -3.26Q40.15 -1.64 38.99 -0.69Q37.83 0.26 35.9 0.26ZM37.36 -2.61Q38.51 -2.61 39.25 -3.22Q39.99 -3.84 39.99 -4.83V-6.37H37.1Q36.21 -6.37 35.66 -5.86Q35.11 -5.35 35.11 -4.52Q35.11 -3.63 35.71 -3.12Q36.31 -2.61 37.36 -2.61Z" fill="#fff"/>
+      <rect x="22.3" y="46.13" width="55.4" height="33.5" rx="6" fill="#fff"/>
+      <path transform="translate(28.47 73.48)" d="M3.55 0 0.77 -21.46H4.48L5.96 -8.35L7.84 -21.44H10.79L12.75 -8.37L14.23 -21.46H17.89L15.13 0H11.42L9.33 -13.59L7.34 0ZM24.35 0.27Q22.66 0.27 21.52 -0.36Q20.38 -0.98 19.8 -2.19Q19.21 -3.39 19.21 -5.09V-10.23Q19.21 -11.98 19.8 -13.16Q20.38 -14.34 21.54 -14.96Q22.71 -15.58 24.35 -15.58Q26.1 -15.58 27.19 -14.95Q28.28 -14.31 28.79 -13.09Q29.31 -11.87 29.31 -10.12V-7.45H23.16V-4.48Q23.16 -3.82 23.31 -3.39Q23.45 -2.97 23.72 -2.8Q23.98 -2.62 24.38 -2.62Q24.75 -2.62 25.03 -2.8Q25.31 -2.97 25.44 -3.34Q25.57 -3.71 25.57 -4.32V-5.78H29.28V-4.5Q29.28 -2.17 28.01 -0.95Q26.74 0.27 24.35 0.27ZM23.16 -9.35H25.57V-10.87Q25.57 -11.53 25.44 -11.94Q25.31 -12.35 25.03 -12.52Q24.75 -12.69 24.33 -12.69Q23.93 -12.69 23.68 -12.51Q23.43 -12.32 23.29 -11.86Q23.16 -11.39 23.16 -10.55ZM38.88 0.27Q38.03 0.27 37.23 -0.13Q36.44 -0.53 35.72 -1.17V0H31.72V-21.46H35.72V-14.18Q36.46 -14.84 37.29 -15.21Q38.11 -15.58 38.98 -15.58Q39.91 -15.58 40.55 -15.17Q41.18 -14.76 41.58 -14.07Q41.98 -13.38 42.13 -12.53Q42.29 -11.69 42.29 -10.81V-4.82Q42.29 -3.34 41.92 -2.2Q41.55 -1.06 40.8 -0.4Q40.04 0.27 38.88 0.27ZM37.1 -2.41Q37.58 -2.41 37.84 -2.72Q38.11 -3.02 38.2 -3.52Q38.29 -4.03 38.29 -4.64V-11.05Q38.29 -11.61 38.19 -12.06Q38.08 -12.51 37.83 -12.79Q37.58 -13.06 37.1 -13.06Q36.73 -13.06 36.38 -12.89Q36.04 -12.72 35.72 -12.48V-2.89Q36.04 -2.68 36.38 -2.54Q36.73 -2.41 37.1 -2.41Z" fill="#1b7f86"/>
+    </symbol>
+    <symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></symbol>
+    <symbol id="i-all" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  </defs>
+</svg>
+<div class="win">
+  <div class="nav"><div class="vt" id="title">Várakozás a videó fülére...</div><div class="meta" id="meta"></div></div>
+  <svg class="logo" viewBox="0 0 100 100" role="img" aria-label="tiaTube"><use class="l-yt" href="#logo-tia-tube"/><use class="l-fb" href="#logo-tia-face"/><use class="l-web" href="#logo-tia-web"/></svg>
+  <div class="body">
+    <form id="opts" hidden>
+      <div class="vlist" id="vlist" hidden></div>
+      <div class="cards" id="what"></div>
+      <div class="row">
+        <label id="quality-label" hidden>Minőség</label><div class="seg" id="quality" hidden></div>
+        <label id="format-label">Formátum</label><div class="seg" id="format"></div>
+        <label>Fájlnév előtag</label><div class="seg" id="dfmt"></div>
+        <label>Fájlnév</label><div class="fname" id="fname"></div>
+      </div>
+      <div class="warn" id="fmt-note" hidden>MP4 csak 1080p-ig: a YouTube fölötte csak VP9 vagy AV1 kódolást ad.</div>
+      <div class="warn" id="vnote" hidden></div>
+      <div class="actions"><button class="btn" id="go" type="submit" disabled>Indítás</button></div>
+    </form>
+    <div id="info" hidden>
+      <p>A tiaTube annak az oldalnak a videóját menti, amelyiken épp vagy.</p>
+      <ul class="sites">
+        <li><svg viewBox="0 0 100 100"><use href="#logo-tia-tube"/></svg><div><b>YouTube</b><br><span>csak hang (MP3) vagy kép és hang, akár 4K</span></div></li>
+        <li><svg viewBox="0 0 100 100"><use href="#logo-tia-face"/></svg><div><b>Facebook</b><br><span>videó, reel, és egy bejegyzés összes képe és videója egy ZIP-ben</span></div></li>
+        <li><svg viewBox="0 0 100 100"><use href="#logo-tia-web"/></svg><div><b>Más oldalak</b><br><span>a HTML5 videók, például a videa.hu</span></div></li>
+      </ul>
+      <p><b>A lényeg:</b> a letöltést a te böngésződ végzi. A szerver csak ott segít, ahol muszáj (összefűzés, MP3);
+        a bejegyzések ZIP-je és a más oldalakról mentett videó teljesen nálad készül.</p>
+      <div class="warn" id="nofound" hidden>Nyisd meg magát a videót vagy a bejegyzést (ne a főoldalt vagy a hírfolyamot),
+        és ott kattints a tiaTube könyvjelzőre.</div>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <ul class="steps" id="steps" hidden></ul>
+    <div class="status" id="total"></div>
+    <div class="result" id="result" hidden></div>
+    <div class="actions" id="run-actions" hidden><button class="btn quiet" id="cancel" type="button">Mégse</button></div>
+  </div>
+</div>
+<script>
+'use strict';
+// the opener's origin, learned from its first answer; until then only the content-free 'tt-ready' goes out
+let SRC = '*';
+const $ = (id) => document.getElementById(id);
+// test mode: no save dialog, a ZIP goes to the PoC server for checking
+const TEST = new URLSearchParams(location.search).has('test');
+const st = { info: null, plat: 'yt', job: null, mode: null, opts: null, queue: [], active: 0, sent: 0, sentBytes: 0, got: 0,
+  gotBytes: 0, end: null, finished: false, done: false, cancelled: false, steps: [], post: null, zip: null };
+const pad = (n) => String(n).padStart(2, '0');
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+};
+
+// ---- time estimate: rates over the last 15 s, so a slow start or an ad does not stick ----
+const samples = { cap: [], up: [], srv: [] };
+const sample = (k, v) => {
+  const now = Date.now() / 1000, a = samples[k];
+  if (a.length && a.at(-1)[1] === v) return;
+  a.push([now, v]);
+  while (a.length > 2 && now - a[1][0] > 15) a.shift();
+};
+// seconds until the value reaches 'goal', or null while there are too few samples
+const left = (k, goal) => {
+  const a = samples[k];
+  if (a.length < 2) return null;
+  const [t0, v0] = a[0], [t1, v1] = a.at(-1);
+  if (t1 - t0 < 3 || v1 <= v0) return null;
+  return Math.max(0, (goal - v1) * (t1 - t0) / (v1 - v0));
+};
+const human = (s) => s < 10 ? 'pár mp' : s < 60 ? `kb. ${Math.ceil(s / 5) * 5} mp`
+  : s < 3600 ? `kb. ${Math.round(s / 60)} perc` : `kb. ${Math.floor(s / 3600)} óra ${Math.round((s % 3600) / 60)} perc`;
+const estimate = () => {
+  if (st.mode === 'post' || st.mode === 'web') return st.end ? null : left('cap', 1);
+  if (st.finished) return left('srv', 100);
+  if (!st.job) return null;
+  const cap = st.end ? 0 : left('cap', 1);
+  // all bytes the capture will produce, from what it produced so far
+  const p = samples.cap.length ? samples.cap.at(-1)[1] : 0;
+  const total = st.end ? st.gotBytes : p > 0.05 ? st.gotBytes / p : null;
+  const up = total ? left('up', total) : null;
+  return cap == null && !st.end ? null : Math.max(cap || 0, up || 0);
+};
+
+// ---- the steps of a run ----
+const STEP = (key, text) => ({ key, text, state: 'todo', t0: 0, t1: 0, sub: null, err: '' });
+// a done step stays done; a step gets its start time when it starts running and its end time when it ends
+const step = (key, state, patch = {}) => {
+  const s = st.steps.find((x) => x.key === key);
+  if (!s) return;
+  if (state && s.state !== state && s.state !== 'ok' && s.state !== 'err') {
+    if (!s.t0) s.t0 = Date.now();
+    if (state === 'ok' || state === 'err') { s.t1 = Date.now(); s.sub = null; }
+    s.state = state;
+  }
+  Object.assign(s, patch);
+};
+const clock = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+};
+// the rows are kept and updated in place: a rebuilt row would restart the spinner's animation
+const rows = new Map();
+const render = () => {
+  if (!st.mode) return;
+  const ul = $('steps');
+  st.steps.forEach((s, i) => {
+    let r = rows.get(s.key);
+    if (!r) {
+      r = { li: el('li'), ico: el('span'), txt: el('span'), t: el('span', 't'), sub: el('div', 'sub') };
+      r.li.append(r.ico, r.txt, r.t, r.sub);
+      rows.set(s.key, r);
+    }
+    if (ul.children[i] !== r.li) ul.insertBefore(r.li, ul.children[i] || null);
+    const cls = s.state === 'ok' ? '' : s.state, ico = `ico ${s.state === 'now' ? 'run' : s.state}`;
+    if (r.li.className !== cls) r.li.className = cls;
+    if (r.ico.className !== ico) {
+      r.ico.className = ico;
+      r.ico.textContent = s.state === 'ok' ? '✓' : s.state === 'err' ? '!' : '';
+    }
+    if (r.txt.textContent !== s.text) r.txt.textContent = s.text;
+    r.t.textContent = s.t0 ? clock((s.t1 || Date.now()) - s.t0) : '';
+    const parts = [];
+    if (s.state === 'now' && s.sub) {
+      if (typeof s.sub.pct === 'number') {
+        const bar = el('div', 'bar'), fill = el('i');
+        fill.style.width = `${Math.round(100 * Math.min(1, s.sub.pct))}%`;
+        bar.append(fill);
+        parts.push(bar);
+      }
+      if (s.sub.text) parts.push(el('span', 'status', s.sub.text));
+    }
+    if (s.state === 'err' && s.err) parts.push(el('span', 'status bad', s.err));
+    r.sub.replaceChildren(...parts);
+    r.sub.hidden = !parts.length;
+  });
+  const eta = st.done ? null : estimate();
+  $('total').textContent = eta == null ? '' : `Összesen hátra: ${human(eta)}`;
+};
+setInterval(() => { if (st.mode && !st.done) render(); }, 1000);
+
+// ---- choices: cards and segmented buttons; the value is in the box's data-value ----
+const pick = (id, v) => {
+  for (const b of $(id).children) b.classList.toggle('on', b.dataset.value === v);
+  $(id).dataset.value = v;
+};
+const val = (id) => $(id).dataset.value;
+const label = (id) => [...$(id).children].find((b) => b.dataset.value === val(id))?.dataset.label || '';
+// opts: [value, label, tooltip]
+const segSet = (id, opts, value) => {
+  $(id).replaceChildren(...opts.map(([v, t, tip]) => {
+    const b = el('button', '', t);
+    b.type = 'button';
+    b.dataset.value = v;
+    b.dataset.label = t;
+    if (tip) b.title = tip;
+    return b;
+  }));
+  pick(id, opts.some((o) => o[0] === value) ? value : opts[0][0]);
+};
+// opts: [value, icon, label, small]
+const cardSet = (id, opts, value) => {
+  $(id).classList.toggle('three', opts.length === 3);
+  $(id).replaceChildren(...opts.map(([v, icon, t, small]) => {
+    const b = el('button', 'card');
+    b.type = 'button';
+    b.dataset.value = v;
+    b.dataset.label = t;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = document.createElementNS(svg.namespaceURI, 'use');
+    use.setAttribute('href', `#${icon}`);
+    svg.append(use);
+    b.append(svg, t);
+    if (small) b.append(el('small', '', small));
+    return b;
+  }));
+  pick(id, opts.some((o) => o[0] === value) ? value : opts[0][0]);
+};
+$('opts').addEventListener('click', (ev) => {
+  const b = ev.target.closest('.seg > button, .cards > button');
+  if (!b || b.disabled) return;
+  pick(b.parentElement.id, b.dataset.value);
+  b.parentElement.dispatchEvent(new Event('change', { bubbles: true }));
+});
+const what = () => val('what');
+const show = (id, on) => { $(id).hidden = $(`${id}-label`).hidden = !on; };
+
+// ---- the header: the site's logo and colour, what is being saved ----
+const setPlatform = (url, kind) => {
+  st.plat = kind === 'post' || /(^|\.)facebook\.com$/.test(host(url)) ? 'fb'
+    : /(^|\.)(youtube\.com|youtu\.be)$/.test(host(url)) ? 'yt' : 'web';
+  document.documentElement.className = st.plat;
+};
+// until the video tab answers: the site from the URL, a neutral title, no form
+const SITE = new URLSearchParams(location.search).get('s');
+if (SITE === 'fb' || SITE === 'post') st.plat = 'fb';
+$('title').textContent = SITE === 'post' ? 'A bejegyzés betöltése...' : 'A videó betöltése...';
+const host = (url) => { try { return new URL(url).hostname; } catch (e) { return ''; } };
+const setMeta = (parts) => { $('meta').textContent = parts.filter(Boolean).join(' · '); };
+const mmss = (d) => (d ? `${Math.floor(d / 60)}:${pad(Math.round(d) % 60)}` : '');
+
+// the publish time as a file name prefix, in the viewer's time zone
+const stamp = (sec, f) => {
+  if (!sec || f === 'none') return '';
+  const d = new Date(sec * 1000);
+  const day = [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())];
+  return f === 'date' ? day.join('-') : day.join('') + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+};
+const PREFIX = { none: 'dátum nélkül', date: 'Dátum előtag', stamp: 'Dátum-idő előtag' };
+// default: the day for one file, the full time for many (they sort by it); the last choice is remembered per kind
+const dfmtKey = () => `tt-dfmt-${st.info?.multi ? 'multi' : 'single'}`;
+let dfmtShown = false;
+const showDates = () => {
+  if (dfmtShown) return;
+  dfmtShown = true;
+  // another site gives no date: the prefix can only be today
+  if (st.info.kind === 'web') {
+    segSet('dfmt', [['none', 'Nincs'], ['today', 'Mai nap', stamp(Date.now() / 1000, 'date')]], 'none');
+    return;
+  }
+  const ts = st.info.ts;
+  let saved = null;
+  try { saved = localStorage.getItem(dfmtKey()); } catch (e) { /* storage unavailable */ }
+  const def = ['none', 'date', 'stamp'].includes(saved) ? saved : st.info.multi ? 'stamp' : 'date';
+  segSet('dfmt', [['none', 'Nincs'], ['date', 'Dátum', stamp(ts, 'date')], ['stamp', 'Dátum-idő', stamp(ts, 'stamp')]],
+    ts ? def : 'none');
+  if (!ts) for (const b of $('dfmt').children) if (b.dataset.value !== 'none') { b.disabled = true; b.title = 'a dátum nem ismert'; }
+};
+$('dfmt').addEventListener('change', () => {
+  try { localStorage.setItem(dfmtKey(), val('dfmt')); } catch (e) { /* not remembered */ }
+});
+
+// the server's safe_name; the ZIP's own names use the same rule
+const safeName = (t) => t.replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').replace(/\s+/g, ' ').trim();
+const prefixOf = (i) => (i.kind === 'web' ? (val('dfmt') === 'today' ? stamp(Date.now() / 1000, 'date') : '')
+  : stamp(i.ts, val('dfmt')));
+const preview = () => {
+  const i = st.info;
+  if (!i) return;
+  const pre = prefixOf(i);
+  const v = i.kind === 'web' && i.videos.find((x) => x.src === webSel);
+  const ext = i.kind === 'web' ? (v ? `.${webExt(v)}` : '') : i.kind === 'post' ? '.zip' : what() === 'video' ? `.${val('format')}`
+    : val('format') === 'mp3' ? '.mp3' : '.m4a / .opus';
+  const parts = [el('span', 'pre', pre), ' ', `${safeName(i.title)} `, el('span', 'id', `[${i.kind === 'web' ? i.host : i.videoId}]`),
+    el('span', 'ext', ext)];
+  $('fname').replaceChildren(...(pre ? parts : parts.slice(2)));
+};
+$('opts').addEventListener('change', preview);
+
+// ---- video: what, format, quality ----
+const LABELS = { hd2160: '4K', hd1440: '1440p', hd1080: '1080p', hd720: '720p', large: '480p', medium: '360p' };
+let shown = '';
+let touched = false;
+const fillQuality = (levels) => {
+  const order = Object.keys(LABELS);
+  let list = levels.filter((x) => LABELS[x]).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  // not playing yet: offer every level, the video tab takes the closest available one
+  if (!list.length) list = order;
+  // the three best levels of the video
+  list = list.slice(0, 3);
+  if (list.join() === shown) return;
+  shown = list.join();
+  const prev = touched ? val('quality') : '';
+  // default: the best up to 1080p
+  segSet('quality', list.map((l) => [l, LABELS[l]]).reverse(),
+    list.includes(prev) ? prev : list.find((x) => order.indexOf(x) >= order.indexOf('hd1080')) || list[0]);
+  checkFormat();
+};
+$('quality').addEventListener('change', () => { touched = true; checkFormat(); });
+// MP4 copies H.264, which YouTube has up to 1080p only: above that the choice is MKV
+const ABOVE_1080 = ['hd2160', 'hd1440'];
+let autoMkv = false;
+const checkFormat = () => {
+  const mp4 = $('format').querySelector('[data-value="mp4"]');
+  if (!mp4) return;
+  const block = st.plat === 'yt' && what() === 'video' && ABOVE_1080.includes(val('quality'));
+  mp4.disabled = block;
+  mp4.title = block ? 'csak 1080p-ig' : 'mindenhol lejátszható';
+  if (block && val('format') === 'mp4') { pick('format', 'mkv'); autoMkv = true; }
+  if (!block && autoMkv) { pick('format', 'mp4'); autoMkv = false; }
+  $('fmt-note').hidden = !block;
+  preview();
+};
+$('format').addEventListener('change', () => { autoMkv = false; });
+const FORMATS = {
+  audio: [['mp3', 'MP3', 'mindenhol lejátszható'], ['orig', 'Eredeti', 'm4a vagy opus, újrakódolás nélkül']],
+  video: [['mp4', 'MP4', 'mindenhol lejátszható'], ['mkv', 'MKV', 'a legjobb minőség, akár 4K']],
+};
+const fillFormats = () => {
+  if (st.info?.kind === 'post') {
+    show('quality', what() !== 'photo' && st.info.items?.video > 0);
+    return;
+  }
+  const prev = val('format');
+  autoMkv = false;
+  segSet('format', FORMATS[what()], prev);
+  show('quality', what() === 'video');
+  checkFormat();
+};
+$('what').addEventListener('change', fillFormats);
+cardSet('what', [['audio', 'i-audio', 'Csak hang'], ['video', 'i-video', 'Kép és hang']], 'audio');
+fillFormats();
+
+// ---- the conversation with the video tab ----
+const onHello = (m) => {
+  st.info = m;
+  setPlatform(m.url, m.kind);
+  $('title').textContent = m.title;
+  if (m.kind === 'web') {
+    setupWeb(m);
+  } else if (m.kind === 'post') {
+    setupPost(m);
+  } else {
+    setMeta([mmss(m.duration), stamp(m.ts, 'date'), m.author]);
+    fillQuality(m.levels || []);
+  }
+  showDates();
+  preview();
+  $('opts').hidden = !!st.mode;
+  $('go').disabled = !!st.mode || (m.kind === 'post' && !(m.items && m.items.photo + m.items.video))
+    || (m.kind === 'web' && !webSel);
+  // a post's items and a player's levels come a bit later: keep asking until they are there
+  return m.kind === 'web' || (m.kind === 'post' ? !!m.items : (m.levels || []).some((x) => LABELS[x]));
+};
+
+const showInfo = () => {
+  const h = new URLSearchParams(location.search).get('host');
+  $('title').textContent = h ? 'Ezen az oldalon nem találtam videót' : 'tiaTube';
+  setMeta([h || 'a könyvjelző nyitja meg egy videónál vagy bejegyzésnél']);
+  $('nofound').hidden = !h;
+  $('info').hidden = false;
+};
+
+if (!window.opener || SITE === 'info') {
+  showInfo();
+} else {
+  const hello = setInterval(() => { if (!st.mode) window.opener.postMessage({ type: 'tt-ready' }, SRC); }, 300);
+  window.addEventListener('message', (ev) => {
+    if (ev.source !== window.opener || (SRC !== '*' && ev.origin !== SRC)) return;
+    SRC = ev.origin;
+    const m = ev.data || {};
+    if (m.type === 'tt-hello') {
+      if (!st.mode && onHello(m)) clearInterval(hello);
+    } else if (m.type === 'tt-head' && st.web) {
+      st.web.len = m.len || st.web.len;
+    } else if (m.type === 'tt-chunk' && st.web && !st.cancelled) {
+      st.web.chain = st.web.chain.then(() => addChunk(m)).catch(fail);
+    } else if (m.type === 'tt-error') {
+      fail(new Error(m.error));
+    } else if (m.type === 'tt-item' && st.post && !st.cancelled) {
+      st.post.chain = st.post.chain.then(() => addItem(m)).catch(fail);
+    } else if (m.type === 'tt-item-failed' && st.post) {
+      st.post.failed.push(m);
+      countItem(m.kind);
+    } else if (m.type === 'tt-frag') {
+      st.got++;
+      st.gotBytes += m.buf.byteLength;
+      st.queue.push(m);
+      step('upload', 'now');
+      pump();
+    } else if (m.type === 'tt-progress') {
+      if (typeof m.pct === 'number') sample('cap', m.pct);
+      if (st.mode === 'post') {
+        const key = /videó/.test(m.text) ? 'videos' : /kép/.test(m.text) ? 'photos' : '';
+        if (key) step(key, 'now', { sub: { pct: m.pct, text: m.text } });
+      } else if (st.mode && st.mode !== 'web') {
+        step('connect', 'ok');
+        step('capture', 'now', { sub: { pct: m.pct, text: m.text } });
+      }
+    } else if (m.type === 'tt-end') {
+      st.end = m;
+      if (st.web) {
+        st.web.chain = st.web.chain.then(finishWeb).catch(fail);
+      } else if (st.post) {
+        st.post.chain = st.post.chain.then(finishZip).catch(fail);
+      } else {
+        step('connect', 'ok');
+        step('capture', 'ok');
+        maybeFinish();
+      }
+    }
+    render();
+  });
+}
+
+// ---- after the start the form gives way to the steps ----
+const toRun = (meta) => {
+  setMeta(meta);
+  $('opts').hidden = true;
+  $('steps').hidden = false;
+};
+const warn = (t) => { $('warn').textContent = t; $('warn').hidden = !t; };
+
+// the download has started already: the result says so; the link is only a fallback for a download that did not start
+const downloaded = (name, href) => {
+  const again = el('a', '', 'újra letöltés');
+  again.href = href;
+  again.download = name;
+  const retry = el('span', 'retry', 'Ha nem jelent meg a letöltések között: ');
+  retry.append(again);
+  return [el('span', '', `Letöltve: ${name}. A Letöltések mappában találod.`), retry];
+};
+
+// ==== a video: captured in the video tab, built by the server ====
+const ENCODE = { mp3: 'MP3 kódolás, metaadatok', orig: 'Mentés újrakódolás nélkül, metaadatok',
+  mp4: 'Összefűzés MP4-be, metaadatok', mkv: 'Összefűzés MKV-be, metaadatok' };
+const start = async () => {
+  const w = what(), dfmt = val('dfmt');
+  const opts = { what: w, format: val('format'), quality: val('quality'), prefix: stamp(st.info.ts, dfmt),
+    date: stamp(st.info.ts, 'date') };
+  st.mode = w;
+  st.opts = opts;
+  const yt = st.plat === 'yt';
+  st.steps = [STEP('connect', yt ? 'Kapcsolódás a videó füléhez' : 'Kapcsolódás a Facebook-fülhöz'),
+    STEP('capture', yt ? `${w === 'video' ? 'Rögzítés' : 'Hang rögzítése'} (16x gyorsítással)` : 'Letöltés a Facebookról'),
+    STEP('upload', 'Feltöltés a szerverre'), STEP('build', 'Összerakás, borítókép'), STEP('encode', ENCODE[opts.format]),
+    STEP('dl', 'Letöltés')];
+  step('connect', 'now');
+  toRun([label('what'), label('format'), w === 'video' && label('quality'), PREFIX[dfmt]]);
+  render();
+  try {
+    const r = await fetch('api/job', { method: 'POST', body: JSON.stringify({ ...st.info, ...opts }) });
+    st.job = (await r.json()).job;
+  } catch (e) {
+    step('connect', 'err', { err: `a szerver nem érhető el: ${e.message}` });
+    st.done = true;
+    render();
+    return;
+  }
+  window.opener.postMessage({ type: 'tt-start', opts }, SRC);
+  render();
+  pump();
+};
+$('opts').onsubmit = (ev) => {
+  ev.preventDefault();
+  ({ post: startPost, web: startWeb })[st.info?.kind]?.() ?? start();
+};
+
+const upload = async (m) => {
+  const q = new URLSearchParams({ job: st.job, track: m.track, kind: m.kind, key: m.key, mime: m.mime || '',
+    scale: m.scale || 1000, ms: m.ms ?? 0, ts: m.ts ?? 0 });
+  for (let i = 0; i < 4; i++) {
+    try {
+      const r = await fetch('api/frag?' + q, { method: 'POST', body: m.buf });
+      if (r.ok) return true;
+    } catch (e) { /* retried */ }
+    await new Promise((res) => setTimeout(res, 500 * (i + 1)));
+  }
+  return false;
+};
+
+const pump = () => {
+  while (st.job && st.active < 3 && st.queue.length) {
+    const m = st.queue.shift();
+    st.active++;
+    upload(m).then((ok) => {
+      st.active--;
+      if (ok) { st.sent++; st.sentBytes += m.buf.byteLength; sample('up', st.sentBytes); } else st.failed = (st.failed || 0) + 1;
+      step('upload', 'now', { sub: { text: `${(st.sentBytes / 1048576).toFixed(1)} MB`
+        + (st.end ? '' : ' · lépést tart') + (st.failed ? ` · hiba: ${st.failed}` : '') } });
+      try { window.opener.postMessage({ type: 'tt-ack', bytes: m.buf.byteLength }, SRC); } catch (e) { /* closed */ }
+      render();
+      pump();
+      maybeFinish();
+    });
+  }
+};
+
+const maybeFinish = async () => {
+  if (!st.end || st.finished || st.active || st.queue.length) return;
+  st.finished = true;
+  step('upload', 'ok');
+  step('build', 'now');
+  render();
+  await fetch('api/finish?job=' + st.job, { method: 'POST', body: JSON.stringify({ ms: st.end.ms }) });
+  poll();
+};
+
+const poll = async () => {
+  const s = await (await fetch('api/status?job=' + st.job)).json();
+  const pct = /(\d+)%/.exec(s.step || '');
+  if (s.state === 'error') {
+    const cur = st.steps.find((x) => x.state === 'now');
+    if (cur) step(cur.key, 'err', { err: s.step });
+    st.done = true;
+    render();
+    return;
+  }
+  if (pct) {
+    sample('srv', Number(pct[1]));
+    step('build', 'ok');
+    step('encode', 'now', { sub: { pct: Number(pct[1]) / 100, text: `${pct[1]}%` } });
+  } else if (s.state === 'building') {
+    step('build', 'now', { sub: { text: s.step } });
+  }
+  if (s.state !== 'done') {
+    render();
+    setTimeout(poll, 1000);
+    return;
+  }
+  step('build', 'ok');
+  step('encode', 'ok');
+  const [kind, name] = Object.entries(s.files || {})[0] || [];
+  const href = `api/file?job=${st.job}&f=${kind}`;
+  // the download starts by itself, like the ZIP's
+  if (name) {
+    const a = el('a');
+    a.href = href;
+    a.click();
+  }
+  step('dl', 'ok');
+  st.done = true;
+  render();
+  $('result').replaceChildren(el('span', s.complete ? 'ok' : 'bad', s.complete ? 'Kész, teljes.' : 'Kész, de HIÁNYOS: '
+    + JSON.stringify({ hang: s.audio, kép: s.video })), ...(name ? downloaded(name, href) : []));
+  $('result').hidden = false;
+};
+
+// ==== a Facebook post: the photos and videos into one ZIP, built in this browser ====
+const enc = (t) => new TextEncoder().encode(t);
+const concat = (parts) => {
+  let n = 0;
+  for (const c of parts) n += c.length;
+  const u = new Uint8Array(n);
+  let o = 0;
+  for (const c of parts) { u.set(c, o); o += c.length; }
+  return u;
+};
+
+let postShown = false;
+const setupPost = (m) => {
+  const it = m.items;
+  setMeta([!it ? 'az elemek keresése...' : it.photo + it.video ? `${it.photo + it.video} elem: ${it.photo} kép, ${it.video} videó`
+    : 'nincs benne kép vagy videó', stamp(m.ts, 'date'), m.author]);
+  if (postShown || !it) return;
+  postShown = true;
+  cardSet('what', [['all', 'i-all', 'Mind', `${it.photo + it.video} elem`], ['photo', 'i-image', 'Csak képek', `${it.photo} kép`],
+    ['video', 'i-video', 'Csak videók', `${it.video} videó`]], 'all');
+  for (const b of $('what').children) {
+    if ((b.dataset.value === 'photo' && !it.photo) || (b.dataset.value === 'video' && !it.video)) b.disabled = true;
+  }
+  show('format', false);
+  $('quality-label').textContent = 'Videók';
+  segSet('quality', [['hd', 'HD 1080p (AV1)', 'újabb eszközökön játszható le'], ['sd', 'SD 360p (H.264)', 'mindenhol lejátszható']], 'hd');
+  fillFormats();
+};
+
+// where the ZIP goes; the save dialog comes first, so a cancel there costs no download
+const ZIP_TYPE = { description: 'ZIP', accept: { 'application/zip': ['.zip'] } };
+const openSink = async (name, type = ZIP_TYPE) => {
+  if (window.showSaveFilePicker && !TEST) {
+    const h = await window.showSaveFilePicker({ suggestedName: name, types: [type] });
+    const ws = await h.createWritable();
+    return { kind: 'file', name: h.name, write: (u8) => ws.write(u8), close: () => ws.close(), abort: () => ws.abort() };
+  }
+  const parts = [];
+  return { kind: 'blob', name, write: async (u8) => { parts.push(u8); },
+    close: async () => new Blob(parts, { type: Object.keys(type.accept)[0] }), abort: async () => { parts.length = 0; } };
+};
+
+const startPost = async () => {
+  const info = st.info, dfmt = val('dfmt'), w = what(), it = info.items;
+  const name = safeName(`${stamp(info.ts, dfmt)} ${info.title} [${info.videoId}]`) + '.zip';
+  let sink;
+  try {
+    sink = await openSink(name);
+  } catch (e) {
+    warn(e.name === 'AbortError' ? 'Nem választottál helyet a mentéshez, semmi nem töltődött le.' : `Nem tudom menteni: ${e.message}`);
+    return;
+  }
+  warn('');
+  st.mode = 'post';
+  st.opts = { what: w, vq: val('quality'), dfmt };
+  const photos = w !== 'video' ? it.photo : 0, videos = w !== 'photo' ? it.video : 0;
+  st.post = { done: 0, bytes: 0, failed: [], chain: Promise.resolve(), want: { photo: photos, video: videos },
+    have: { photo: 0, video: 0 } };
+  st.steps = [STEP('collect', `Elemek összegyűjtése (${it.photo + it.video})`)];
+  if (sink.kind === 'file') st.steps.push(STEP('where', `Mentés helye: ${sink.name}`));
+  if (photos) st.steps.push(STEP('photos', `Képek (0 / ${photos})`));
+  if (videos) st.steps.push(STEP('videos', `Videók (0 / ${videos})`));
+  st.steps.push(STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés'));
+  step('collect', 'ok');
+  step('where', 'ok');
+  toRun([label('what'), videos && label('quality'), PREFIX[dfmt]]);
+  $('run-actions').hidden = false;
+  st.zip = new Zip(sink);
+  window.opener.postMessage({ type: 'tt-start', opts: st.opts }, SRC);
+  render();
+};
+
+// one more item of a kind arrived or failed
+const countItem = (kind) => {
+  const p = st.post, n = ++p.have[kind], all = p.want[kind], failed = p.failed.filter((f) => f.kind === kind).length;
+  const key = kind === 'photo' ? 'photos' : 'videos';
+  const text = `${kind === 'photo' ? 'Képek' : 'Videók'} (${n} / ${all}${failed ? `, kimaradt: ${failed}` : ''})`;
+  step(key, n >= all ? 'ok' : 'now', { text });
+};
+
+const fail = (err) => {
+  if (st.cancelled) return;
+  st.cancelled = true;
+  try { window.opener.postMessage({ type: 'tt-cancel' }, SRC); } catch (e) { /* closed */ }
+  (st.zip?.sink || st.web?.sink)?.abort();
+  $('run-actions').hidden = true;
+  const cur = st.steps.find((x) => x.state === 'now') || st.steps.find((x) => x.state === 'todo');
+  if (cur) step(cur.key, 'err', { err: String(err.message || err) });
+  st.done = true;
+  render();
+  $('result').replaceChildren(el('span', 'bad', st.web ? 'A videó nem mentődött el.' : 'A ZIP nem készült el.'));
+  $('result').hidden = false;
+};
+$('cancel').onclick = () => fail(new Error('megszakítottad'));
+
+const extOf = (u8, mime, kind) => {
+  const s = String.fromCharCode(...u8.subarray(0, 12));
+  if (u8[0] === 0xFF && u8[1] === 0xD8) return 'jpg';
+  if (s.startsWith('\x89PNG')) return 'png';
+  if (s.startsWith('RIFF') && s.slice(8, 12) === 'WEBP') return 'webp';
+  if (s.slice(4, 8) === 'ftyp') return 'mp4';
+  return /png/.test(mime) ? 'png' : /webp/.test(mime) ? 'webp' : kind === 'video' ? 'mp4' : 'jpg';
+};
+
+// Facebook's placeholder when a photo has no description
+const NO_ALT = /^(Nem érhető el leírás a fényképhez|No photo description available)\.?$/i;
+const addItem = async (m) => {
+  const len = m.buf.byteLength, info = st.info, alt = NO_ALT.test(m.alt || '') ? '' : m.alt;
+  let data = new Uint8Array(m.buf);
+  const ext = extOf(data, m.mime, m.kind);
+  if (ext === 'jpg') {
+    try {
+      data = tagJpeg(data, { ts: m.ts, author: m.author, title: info.title, desc: info.text || alt, alt,
+        url: `https://www.facebook.com/photo/?fbid=${m.id}`, post: info.url });
+    } catch (e) { console.warn('tiaTube: no metadata', e); }
+  }
+  const nn = String(m.index).padStart(Math.max(2, String(m.of).length), '0');
+  // the title is cut so the name stays well under the 255 byte limit of the file systems
+  const name = safeName(`${stamp(m.ts, st.opts.dfmt)} ${info.title.slice(0, 60)} ${nn} [${m.id}]`) + '.' + ext;
+  await st.zip.add(name, data, m.ts);
+  st.post.done++;
+  st.post.bytes += data.length;
+  countItem(m.kind);
+  try { window.opener.postMessage({ type: 'tt-ack', bytes: len }, SRC); } catch (e) { /* closed */ }
+  render();
+};
+
+const finishZip = async () => {
+  if (st.cancelled) return;
+  if (!st.post.done) throw new Error('egy elemet sem sikerült letölteni');
+  step('close', 'now');
+  render();
+  const blob = await st.zip.close();
+  const sink = st.zip.sink, mb = (st.post.bytes / 1048576).toFixed(1), failed = st.post.failed.length;
+  const out = [el('span', failed ? 'bad' : 'ok', failed ? `Kész, de HIÁNYOS: ${failed} elem kimaradt.`
+    : `Kész, teljes: ${st.post.done} fájl, ${mb} MB.`)];
+  if (sink.kind === 'file') {
+    out.push(el('span', '', `Elmentve: ${sink.name}`));
+  } else {
+    const href = URL.createObjectURL(blob), a = el('a');
+    a.href = href;
+    a.download = sink.name;
+    out.push(...downloaded(sink.name, href));
+    if (TEST) {
+      const r = await fetch('api/debug-zip', { method: 'POST', body: blob });
+      out.push(el('span', '', `teszt: ${(await r.json()).bytes} bájt a szerveren`));
+    } else {
+      a.click();
+    }
+  }
+  step('close', 'ok');
+  st.done = true;
+  $('run-actions').hidden = true;
+  render();
+  $('result').replaceChildren(...out);
+  $('result').hidden = false;
+};
+
+
+// ==== tiaWeb: a video of any other site; a plain file goes from the site straight into the chosen file ====
+let webSel = '';
+const KINDS = { stream: 'Darabolt videó: a letöltése hamarosan jön', hls: 'Darabolt videó (HLS): hamarosan',
+  dash: 'Darabolt videó (DASH): hamarosan', drm: 'Másolásvédett (DRM): nem tölthető le',
+  frame: 'Másik oldalról beágyazott lejátszó' };
+const webType = (v) => (/webm/.test(v.mime || '') || /\.webm(\?|$)/i.test(v.src) ? 'WebM'
+  : /mp4/.test(v.mime || '') || /\.mp4(\?|$)/i.test(v.src) ? 'MP4' : 'videó');
+// a video with sizes (videa.hu): the chosen one, else the best; the file details come from it
+const optOf = (v) => (v.options ? v.options.find((o) => o.name === val('quality')) || v.options.at(-1) : v);
+const webExt = (v) => (webType(optOf(v)) === 'WebM' ? 'webm' : 'mp4');
+const usable = (v) => v.kind === 'file' && optOf(v).cors !== false;
+const mbOf = (n) => (n / 1048576).toFixed(n < 10485760 ? 1 : 0);
+
+const setupWeb = (m) => {
+  const vs = m.videos;
+  setMeta([m.host, `${vs.length} videó`]);
+  if (!vs.some((v) => v.src === webSel && usable(v))) webSel = vs.find(usable)?.src || '';
+  show('format', false);
+  $('what').hidden = true;
+  $('vlist').hidden = false;
+  $('vlist').replaceChildren(...vs.map((v) => {
+    const card = el('div', `vcard${usable(v) ? ' ok' : ''}${v.src === webSel ? ' on' : ''}`);
+    card.dataset.value = v.src;
+    const pic = el('div', 'vthumb');
+    if (v.thumb) pic.style.backgroundImage = `url(${JSON.stringify(v.thumb)})`;
+    const txt = el('div', 'vtxt');
+    if (v.kind === 'file') {
+      const o = optOf(v);
+      txt.append(el('b', '', [mmss(v.dur), o.w && `${o.w}x${o.h}`].filter(Boolean).join(' · ') || 'Videó'),
+        el('span', '', [`${webType(o)}, egybefüggő fájl`, o.size && `${mbOf(o.size)} MB`].filter(Boolean).join(' · ')));
+      if (v.author) txt.append(el('span', '', `Feltöltő: ${v.author}`));
+      if (o.cors === false) txt.append(el('span', 'bad', 'A szervere nem engedi a böngészős letöltést'));
+    } else {
+      txt.append(el('b', '', KINDS[v.kind]), el('span', '', host(v.src)));
+      if (v.kind === 'frame') {
+        const a = el('a', '', 'Megnyitás külön fülön');
+        a.href = v.src;
+        a.target = '_blank';
+        txt.append(a);
+      }
+    }
+    card.append(pic, txt);
+    return card;
+  }));
+  // the sizes of the chosen video, smallest first; the default is the best
+  const sel = vs.find((v) => v.src === webSel);
+  if (sel?.options) {
+    const opts = sel.options.map((o) => [o.name, o.name, [webType(o), o.size && `${mbOf(o.size)} MB`].filter(Boolean).join(', ')]);
+    if (opts.map((o) => o.join()).join() !== qualityShown) {
+      qualityShown = opts.map((o) => o.join()).join();
+      segSet('quality', opts, sel.options.some((o) => o.name === val('quality')) ? val('quality') : sel.options.at(-1).name);
+    }
+    $('quality-label').textContent = 'Minőség';
+  }
+  show('quality', !!sel?.options);
+  versionNote();
+  $('go').disabled = !webSel;
+};
+let qualityShown = '';
+// the player's other sizes: switching there updates this list (the page is scanned every 2 s)
+const versionNote = () => {
+  const v = st.info.videos.find((x) => x.src === webSel);
+  const other = v?.options ? [] : (v?.versions || []).filter((x) => x !== `${v.h}p`);
+  $('vnote').textContent = other.length ? `A lejátszó ezeket is kínálja: ${other.join(', ')}. Válts a lejátszóban,`
+    + ' és ez a lista magától frissül.' : '';
+  $('vnote').hidden = !other.length;
+};
+$('vlist').addEventListener('click', (ev) => {
+  const card = ev.target.closest('.vcard.ok');
+  if (!card || ev.target.closest('a')) return;
+  webSel = card.dataset.value;
+  qualityShown = '';
+  setupWeb(st.info);
+  preview();
+});
+// another size: the card shows its type and file size
+$('quality').addEventListener('change', () => { if (st.info?.kind === 'web') { setupWeb(st.info); preview(); } });
+setInterval(() => {
+  if (st.info?.kind === 'web' && !st.mode && window.opener) window.opener.postMessage({ type: 'tt-rescan' }, SRC);
+}, 2000);
+
+const startWeb = async () => {
+  const info = st.info, v = info.videos.find((x) => x.src === webSel);
+  if (!v) return;
+  const o = optOf(v), ext = webExt(v), pre = prefixOf(info);
+  const mime = o.mime || (ext === 'webm' ? 'video/webm' : 'video/mp4');
+  const name = safeName(`${pre} ${info.title} [${info.host}]`) + `.${ext}`;
+  let sink;
+  try {
+    sink = await openSink(name, { description: 'Videó', accept: { [mime]: [`.${ext}`] } });
+  } catch (e) {
+    warn(e.name === 'AbortError' ? 'Nem választottál helyet a mentéshez, semmi nem töltődött le.' : `Nem tudom menteni: ${e.message}`);
+    return;
+  }
+  warn('');
+  st.mode = 'web';
+  st.opts = { src: v.src, url: o.src };
+  st.web = { got: 0, len: o.size || 0, chain: Promise.resolve(), sink };
+  st.steps = [STEP('found', `Videó: ${webType(o)}, ${o.w}x${o.h}`)];
+  if (sink.kind === 'file') st.steps.push(STEP('where', `Mentés helye: ${sink.name}`));
+  st.steps.push(STEP('dl', 'Letöltés az oldalról'), STEP('save', sink.kind === 'file' ? 'Fájl lezárása' : 'Letöltés'));
+  step('found', 'ok');
+  step('where', 'ok');
+  step('dl', 'now');
+  toRun([v.options ? o.name : `${o.w}x${o.h}`, webType(o), pre ? 'Mai nap előtag' : 'dátum nélkül']);
+  $('run-actions').hidden = false;
+  window.opener.postMessage({ type: 'tt-start', opts: st.opts }, SRC);
+  render();
+};
+
+const addChunk = async (m) => {
+  const u8 = new Uint8Array(m.buf), w = st.web;
+  await w.sink.write(u8);
+  w.got += u8.length;
+  try { window.opener.postMessage({ type: 'tt-ack', bytes: u8.length }, SRC); } catch (e) { /* closed */ }
+  step('dl', 'now', { sub: { pct: w.len ? w.got / w.len : undefined,
+    text: w.len ? `${mbOf(w.got)} / ${mbOf(w.len)} MB` : `${mbOf(w.got)} MB` } });
+  render();
+};
+
+const finishWeb = async () => {
+  if (st.cancelled) return;
+  const w = st.web, sink = w.sink;
+  step('dl', 'ok');
+  step('save', 'now');
+  render();
+  const blob = await sink.close();
+  const out = [el('span', 'ok', `Kész: ${mbOf(w.got)} MB.`)];
+  if (sink.kind === 'file') {
+    out.push(el('span', '', `Elmentve: ${sink.name}`));
+  } else {
+    const href = URL.createObjectURL(blob), a = el('a');
+    a.href = href;
+    a.download = sink.name;
+    out.push(...downloaded(sink.name, href));
+    if (TEST) {
+      const r = await fetch('api/debug-zip', { method: 'POST', body: blob });
+      out.push(el('span', '', `teszt: ${(await r.json()).bytes} bájt a szerveren`));
+    } else {
+      a.click();
+    }
+  }
+  step('save', 'ok');
+  st.done = true;
+  $('run-actions').hidden = true;
+  render();
+  $('result').replaceChildren(...out);
+  $('result').hidden = false;
+};
+
+// ---- ZIP, stored (photos and videos are compressed already): plain concatenation, no wait for compression ----
+const CRC = new Uint32Array(256).map((_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = (u8) => {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+};
+// MS-DOS time, local; the extra field 'UT' carries the exact time in UTC
+const dosTime = (sec) => {
+  const t = new Date(sec * 1000), y = Math.max(1980, t.getFullYear());
+  return { time: (t.getHours() << 11) | (t.getMinutes() << 5) | (t.getSeconds() >> 1),
+    date: ((y - 1980) << 9) | ((t.getMonth() + 1) << 5) | t.getDate() };
+};
+const utExtra = (sec) => {
+  const v = new DataView(new ArrayBuffer(9));
+  v.setUint16(0, 0x5455, true); v.setUint16(2, 5, true); v.setUint8(4, 1); v.setUint32(5, sec, true);
+  return new Uint8Array(v.buffer);
+};
+class Zip {
+  constructor(sink) { this.sink = sink; this.off = 0; this.cd = []; }
+  async put(u8) { await this.sink.write(u8); this.off += u8.length; }
+  async add(name, data, mtime) {
+    const fn = enc(name), sec = Math.round(mtime || Date.now() / 1000), d = dosTime(sec), ut = utExtra(sec);
+    if (this.off + 30 + fn.length + ut.length + data.length > 0xFFFFFFFF) throw new Error('a ZIP 4 GB-nál nagyobb lenne');
+    const crc = crc32(data), at = this.off, h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);  // bit 11: UTF-8 names
+    h.setUint16(10, d.time, true); h.setUint16(12, d.date, true); h.setUint32(14, crc, true);
+    h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, fn.length, true); h.setUint16(28, ut.length, true);
+    await this.put(new Uint8Array(h.buffer)); await this.put(fn); await this.put(ut); await this.put(data);
+    this.cd.push({ fn, ut, crc, size: data.length, d, at });
+  }
+  async close() {
+    const start = this.off;
+    for (const e of this.cd) {
+      const h = new DataView(new ArrayBuffer(46));
+      h.setUint32(0, 0x02014b50, true); h.setUint16(4, (3 << 8) | 20, true); h.setUint16(6, 20, true);
+      h.setUint16(8, 0x0800, true); h.setUint16(12, e.d.time, true); h.setUint16(14, e.d.date, true);
+      h.setUint32(16, e.crc, true); h.setUint32(20, e.size, true); h.setUint32(24, e.size, true);
+      h.setUint16(28, e.fn.length, true); h.setUint16(30, e.ut.length, true);
+      h.setUint32(38, 0o100644 * 65536, true);  // a regular file, rw-r--r--
+      h.setUint32(42, e.at, true);
+      await this.put(new Uint8Array(h.buffer)); await this.put(e.fn); await this.put(e.ut);
+    }
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, this.cd.length, true); end.setUint16(10, this.cd.length, true);
+    end.setUint32(12, this.off - start, true); end.setUint32(16, start, true);
+    await this.put(new Uint8Array(end.buffer));
+    return this.sink.close();
+  }
+}
+
+// ---- JPEG metadata: EXIF (ASCII only: dates, author, description without accents) and XMP (UTF-8, all of it) ----
+// both go in as APP1 segments after the JFIF header; the image data stays byte for byte
+const segment = (marker, payload) => {
+  if (payload.length + 2 > 65535) throw new Error('segment too large');
+  return concat([new Uint8Array([0xFF, marker, (payload.length + 2) >> 8, (payload.length + 2) & 255]), payload]);
+};
+const asciiOnly = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e\n]/g, '?');
+const exifDate = (sec) => {
+  const d = new Date(sec * 1000);
+  return `${d.getFullYear()}:${pad(d.getMonth() + 1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+const tzOf = (sec) => {
+  const o = -new Date(sec * 1000).getTimezoneOffset();
+  return `${o < 0 ? '-' : '+'}${pad(Math.floor(Math.abs(o) / 60))}:${pad(Math.abs(o) % 60)}`;
+};
+const isoDate = (sec) => exifDate(sec).replace(/^(\d+):(\d+):(\d+) /, '$1-$2-$3T') + tzOf(sec);
+// one TIFF IFD, big endian; 'at' is its offset from the TIFF header, longer values follow the entries
+const ifdSize = (es) => 2 + 12 * es.length + 4 + es.reduce((a, e) => a + (e[3].length > 4 ? e[3].length + (e[3].length % 2) : 0), 0);
+const ifd = (es, at) => {
+  es.sort((a, b) => a[0] - b[0]);
+  const head = 2 + 12 * es.length + 4, v = new DataView(new ArrayBuffer(head)), extra = [];
+  let data = at + head;
+  v.setUint16(0, es.length);
+  es.forEach(([tag, type, count, bytes], k) => {
+    const o = 2 + 12 * k;
+    v.setUint16(o, tag); v.setUint16(o + 2, type); v.setUint32(o + 4, count);
+    if (bytes.length <= 4) { new Uint8Array(v.buffer).set(bytes, o + 8); return; }
+    v.setUint32(o + 8, data);
+    const b = bytes.length % 2 ? concat([bytes, new Uint8Array(1)]) : bytes;
+    extra.push(b);
+    data += b.length;
+  });
+  return concat([new Uint8Array(v.buffer), ...extra]);
+};
+// the frame size from the first SOF marker
+const jpegSize = (u8) => {
+  let i = 2;
+  while (i + 9 < u8.length && u8[i] === 0xFF) {
+    const mk = u8[i + 1];
+    if (mk >= 0xC0 && mk <= 0xCF && ![0xC4, 0xC8, 0xCC].includes(mk)) {
+      return { h: (u8[i + 5] << 8) | u8[i + 6], w: (u8[i + 7] << 8) | u8[i + 8] };
+    }
+    if (mk === 0xDA) break;
+    i += 2 + ((u8[i + 2] << 8) | u8[i + 3]);
+  }
+  return null;
+};
+const exifSegment = (m) => {
+  const A = (t) => enc(asciiOnly(t) + '\0');
+  const short = (v) => new Uint8Array([v >> 8, v & 255]);
+  const long = (v) => new Uint8Array([v >>> 24, (v >> 16) & 255, (v >> 8) & 255, v & 255]);
+  const date = A(exifDate(m.ts)), tz = A(tzOf(m.ts)), ptr = new Uint8Array(4);
+  // the tags the EXIF standard requires: YCbCr, sRGB, the pixel size
+  const ifd0 = [[0x0132, 2, date.length, date], [0x8769, 4, 1, ptr], [0x0213, 3, 1, short(1)]];
+  if (m.desc) { const b = A(m.desc.slice(0, 2000)); ifd0.push([0x010E, 2, b.length, b]); }
+  if (m.author) { const b = A(m.author); ifd0.push([0x013B, 2, b.length, b]); }
+  const exif = [[0x9000, 7, 4, enc('0232')], [0x9003, 2, date.length, date], [0x9011, 2, tz.length, tz],
+    [0x9101, 7, 4, new Uint8Array([1, 2, 3, 0])], [0xA001, 3, 1, short(1)]];
+  if (m.size) exif.push([0xA002, 4, 1, long(m.size.w)], [0xA003, 4, 1, long(m.size.h)]);
+  const exifAt = 8 + ifdSize(ifd0);
+  new DataView(ptr.buffer).setUint32(0, exifAt);
+  return segment(0xE1, concat([enc('Exif\0\0'), new Uint8Array([0x4D, 0x4D, 0, 0x2A, 0, 0, 0, 8]), ifd(ifd0, 8),
+    ifd(exif, exifAt)]));
+};
+const xmlEsc = (t) => String(t).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]);
+const langAlt = (tag, t) => (t ? `<${tag}><rdf:Alt><rdf:li xml:lang="x-default">${xmlEsc(t)}</rdf:li></rdf:Alt></${tag}>` : '');
+const xmpSegment = (m) => {
+  const d = isoDate(m.ts);
+  const xml = '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>'
+    + '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+    + '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xmp="http://ns.adobe.com/xap/1.0/"'
+    + ' xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/" xmlns:exif="http://ns.adobe.com/exif/1.0/"'
+    + ' xmlns:Iptc4xmpCore="http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/"'
+    + ` xmp:CreateDate="${d}" photoshop:DateCreated="${d}" exif:DateTimeOriginal="${d}" dc:source="${xmlEsc(m.url)}">`
+    + langAlt('dc:title', m.title) + langAlt('dc:description', m.desc && m.desc.slice(0, 20000))
+    + langAlt('Iptc4xmpCore:AltTextAccessibility', m.alt)
+    + (m.author ? `<dc:creator><rdf:Seq><rdf:li>${xmlEsc(m.author)}</rdf:li></rdf:Seq></dc:creator>` : '')
+    + (m.post ? `<dc:relation><rdf:Bag><rdf:li>${xmlEsc(m.post)}</rdf:li></rdf:Bag></dc:relation>` : '')
+    + '</rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="w"?>';
+  return segment(0xE1, concat([enc('http://ns.adobe.com/xap/1.0/\0'), enc(xml)]));
+};
+const startsWith = (u8, at, t) => [...t].every((c, k) => u8[at + k] === c.charCodeAt(0));
+const tagJpeg = (u8, m) => {
+  if (u8[0] !== 0xFF || u8[1] !== 0xD8) return u8;
+  let i = 2, app0 = null;
+  const keep = [];
+  // the leading APPn / COM segments: an old EXIF or XMP is replaced, the rest (e.g. an ICC profile) kept
+  while (i + 4 <= u8.length && u8[i] === 0xFF) {
+    const mk = u8[i + 1];
+    if (!((mk >= 0xE0 && mk <= 0xEF) || mk === 0xFE)) break;
+    const end = i + 2 + ((u8[i + 2] << 8) | u8[i + 3]), seg = u8.subarray(i, end);
+    const old = mk === 0xE1 && (startsWith(u8, i + 4, 'Exif\0') || startsWith(u8, i + 4, 'http://ns.adobe.com/xap/1.0/'));
+    if (mk === 0xE0 && i === 2) app0 = seg;
+    else if (!old) keep.push(seg);
+    i = end;
+  }
+  m = { ...m, size: jpegSize(u8) };
+  return concat([u8.subarray(0, 2), app0, exifSegment(m), xmpSegment(m), ...keep, u8.subarray(i)].filter(Boolean));
+};
+</script>
+</body>
+</html>
