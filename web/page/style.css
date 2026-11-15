@@ -1,23 +1,9 @@
-/* the tiaTube window; --c, the site's color, comes from sites.json (see head.js) */
-:root { --ink: #222; --muted: #666; --nav: #222; --bg: #f4f4f2; --card: #fff; --line: #dcdcd8; --ok: #2e8b3a; --bad: #b3212b; }
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; }
-body { background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+/* the tiaTube window */
+@import '../shared/ui.css';
 .win { min-height: 100%; position: relative; display: flex; flex-direction: column; }
 
-/* the dark header names what is being saved; the logo sits on the joint of the header and the body */
-.nav { min-height: 58px; background: var(--nav); color: #eee; padding: 8px 14px 8px 92px; flex: none; display: flex;
-  flex-direction: column; justify-content: center; gap: 1px; }
-.vt { font-size: 15px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
-.meta { color: #bdbdbd; font-size: 13px; }
-.logo { position: absolute; left: 14px; top: 10px; width: 66px; height: 66px; filter: drop-shadow(0 2px 3px #0004); }
-.body { padding: 30px 16px 10px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 
-.btn { border: 0; border-radius: 10px; background: var(--c); color: #fff; font: inherit; font-weight: 700; padding: 10px 18px;
-  cursor: pointer; }
-.btn:disabled { opacity: .4; cursor: default; }
 .btn.quiet { background: #8a8a86; }
 .actions { margin-top: auto; display: flex; gap: 8px; }
 
@@ -83,8 +69,3 @@ form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 /* what tiaTube can do: for a page without a video, or a window opened by hand */
 #info { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 #info p { margin: 0; }
-.sites { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.sites li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; }
-.sites svg { width: 34px; height: 34px; }
-.sites span { color: var(--muted); font-size: 13px; }
-.warn { font-size: 12px; color: #8a5a00; background: #fdf6e3; border: 1px solid #e0c58a; border-radius: 8px; padding: 6px 10px; }

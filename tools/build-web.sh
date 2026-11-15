@@ -2,6 +2,7 @@
 # Builds the web files the server embeds: build-web.sh <out dir>. Runs in the Docker build (see Dockerfile).
 # - bookmarklet.js: one script (the sites block foreign scripts, so it cannot load more)
 # - index.html (the window), install.html: one file each, their script, style and the logos inlined
+# - assets/logos/: the logos, as favicons
 set -eu
 out=$1
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -46,4 +47,14 @@ inline "$out/index.html" '/*CSS*/' "$tmp/style.css"
 inline "$out/index.html" '<!--LOGOS-->' "$tmp/logos.svg"
 inline "$out/index.html" '/*SCRIPT*/' "$tmp/main.js"
 
-cp "$root/web/install/install.html" "$out/install.html"
+esbuild "$root/web/install/main.js" --format=iife --outfile="$tmp/install.js"
+esbuild "$root/web/install/style.css" --loader:.webp=dataurl --outfile="$tmp/install.css"
+cp "$root/web/install/index.html" "$out/install.html"
+inline "$out/install.html" '/*HEAD*/' "$tmp/head.js"
+inline "$out/install.html" '/*CSS*/' "$tmp/install.css"
+inline "$out/install.html" '<!--LOGOS-->' "$tmp/logos.svg"
+inline "$out/install.html" '/*SCRIPT*/' "$tmp/install.js"
+
+# the favicons
+mkdir -p "$out/assets/logos"
+cp "$root/assets/logos/"tia*.svg "$out/assets/logos/"

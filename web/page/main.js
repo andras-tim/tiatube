@@ -1,6 +1,6 @@
 // The tiaTube window: opened by the bookmarklet on a video page, it asks what to save, then runs one of the flows.
 import { MSG } from '../shared/protocol.js';
-import { SITES, SITE_TEXT } from '../shared/sites.js';
+import { gist, siteItems } from '../shared/about.js';
 import { page, st } from './state.js';
 import { $, cardSet, el, mmss, pick, render, sample, segSet, setMeta, show, val, what } from './ui.js';
 import { prefixOf, safeName, stamp } from './names.js';
@@ -156,17 +156,8 @@ const showInfo = () => {
   const h = params.get('host');
   $('title').textContent = h ? 'Ezen az oldalon nem találtam videót' : 'tiaTube';
   setMeta([h || 'a könyvjelző nyitja meg egy videónál vagy bejegyzésnél']);
-  $('sites').replaceChildren(...Object.keys(SITES).map((k) => {
-    const li = el('li'), svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const use = document.createElementNS(svg.namespaceURI, 'use');
-    svg.setAttribute('viewBox', '0 0 100 100');
-    use.setAttribute('href', `#logo-tia${k}`);
-    svg.append(use);
-    const txt = el('div');
-    txt.append(el('b', '', SITE_TEXT[k].name), el('br'), el('span', '', SITE_TEXT[k].what));
-    li.append(svg, txt);
-    return li;
-  }));
+  $('sites').replaceChildren(...siteItems());
+  $('sites').after(gist());
   $('nofound').hidden = !h;
   $('info').hidden = false;
 };
