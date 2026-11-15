@@ -3,7 +3,8 @@
 It also writes logos.svg, the same logos as <symbol> elements, for pages that inline them.
 
 Every element is placed by its drawn outline (ink), not by font metrics: the "tia" and the word are centred
-horizontally, the word is centred in the white box, and the whole white block is centred vertically.
+horizontally, the white box is the word's ink with a margin around it (the same on the left and right, a little more
+than above and below), and the whole white block is centred vertically.
 
 usage: logo.py --sites sites.json --fonts DIR --out DIR
 needs: fonttools, uharfbuzz; fonts: JetBrains Mono ExtraBold, Oswald SemiBold
@@ -21,7 +22,7 @@ from fontTools.ttLib import TTFont
 # geometry, in units of the 100x100 view box
 SHAPE_RADIUS = 24          # rounded top-left and bottom-right corners
 TIA = dict(font='JetBrainsMono-ExtraBold.ttf', size=26.1, spacing=-0.7)
-BOX = dict(width=55.4, height=33.5, radius=6)
+BOX = dict(margin_x=8, margin_y=5.85, radius=6)
 GAP = 4.8                  # between the bottom of "tia" and the top of the box
 WORD = dict(font='Oswald-SemiBold.ttf', size=26.5)
 
@@ -73,14 +74,16 @@ def body(fonts, site):
     tia_d, tia_b = run(fonts['tia'], 'tia', TIA['size'], TIA['spacing'])
     word_d, word_b = run(fonts['word'], site['word'], WORD['size'], width=site.get('logoWordWidth'))
     tia_h = tia_b[3] - tia_b[1]
-    top = 50 - (tia_h + GAP + BOX['height']) / 2
-    bx, by = 50 - BOX['width'] / 2, top + tia_h + GAP
+    mx, my = BOX['margin_x'], BOX['margin_y']
+    bw, bh = word_b[2] - word_b[0] + 2 * mx, word_b[3] - word_b[1] + 2 * my
+    top = 50 - (tia_h + GAP + bh) / 2
+    bx, by = 50 - bw / 2, top + tia_h + GAP
     tx, ty = 50 - (tia_b[0] + tia_b[2]) / 2, top - tia_b[1]
-    wx, wy = 50 - (word_b[0] + word_b[2]) / 2, by + BOX['height'] / 2 - (word_b[1] + word_b[3]) / 2
+    wx, wy = bx + mx - word_b[0], by + my - word_b[1]
     r, c = SHAPE_RADIUS, site['color']
     return (f'<path d="M{r} 0H100V{100 - r}A{r} {r} 0 0 1 {100 - r} 100H0V{r}A{r} {r} 0 0 1 {r} 0Z" fill="{c}"/>'
             f'<path transform="translate({fmt(tx)} {fmt(ty)})" d="{tia_d}" fill="#fff"/>'
-            f'<rect x="{fmt(bx)}" y="{fmt(by)}" width="{BOX["width"]}" height="{BOX["height"]}" rx="{BOX["radius"]}"'
+            f'<rect x="{fmt(bx)}" y="{fmt(by)}" width="{fmt(bw)}" height="{fmt(bh)}" rx="{BOX["radius"]}"'
             f' fill="#fff"/>'
             f'<path transform="translate({fmt(wx)} {fmt(wy)})" d="{word_d}" fill="{c}"/>')
 
