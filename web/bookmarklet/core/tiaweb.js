@@ -77,7 +77,7 @@ export class TiaWeb {
   found() { return !!this.media?.videos.length; }
 
   // the window's URL: the site in it gives the right logo before the first message
-  windowUrl() { return `${this.TT}/?s=${this.site}`; }
+  windowUrl() { return `${this.TT}/window?s=${this.site}`; }
 
   hello() {
     const m = this.media;
@@ -93,7 +93,7 @@ export class TiaWeb {
   run() {
     this.media = this.find();
     if (!this.found()) {
-      if (!window.open(`${this.TT}/?s=info&host=${encodeURIComponent(this.host)}`, WINDOW.name, WINDOW.features)) {
+      if (!window.open(`${this.TT}/window?s=info&host=${encodeURIComponent(this.host)}`, WINDOW.name, WINDOW.features)) {
         alert(ALERT);
       }
       return;

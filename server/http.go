@@ -35,8 +35,11 @@ type API struct {
 
 func (a *API) routes() http.Handler {
 	m := http.NewServeMux()
-	m.HandleFunc("GET /{$}", a.web.page)
-	m.HandleFunc("GET /install", a.web.install)
+	m.HandleFunc("GET /{$}", a.web.install)
+	m.HandleFunc("GET /window", a.web.page)
+	m.HandleFunc("GET /install", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "./", http.StatusMovedPermanently)
+	})
 	m.HandleFunc("GET /assets/", a.web.asset)
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") })
 	m.HandleFunc("POST /api/job", a.createJob)
