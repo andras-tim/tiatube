@@ -11,7 +11,7 @@ small server muxes and transcodes with ffmpeg only where a browser cannot. The p
 |---|---|
 | `sites.json` | the sites: key, name, logo word, color, hosts |
 | `poc/` | the working prototype; split into the components below step by step, then removed |
-| `server/` | Go service (planned) |
+| `server/` | Go service; embeds the web files |
 | `web/bookmarklet/` | `core/` (tiaWeb) and `sites/` (planned) |
 | `web/page/` | the tiaTube window (planned) |
 | `web/install/` | install page over the blurred old page (planned) |
@@ -45,10 +45,24 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
 
 ## Running
 
-- Everything is built and run in Docker; nothing is installed on the developer's machine.
-- The prototype: `python3 -I poc/server.py 8765`, then `http://127.0.0.1:8765/install`. Local use only.
-- Testing a capture needs a real desktop Chrome with the bookmarklet, logged in where the site needs it; no headless
-  browser.
+- The `Makefile` is the one interface, locally and in CI (`.github/workflows/ci.yml` runs `make ci`). Everything
+  builds and runs in Docker; nothing is installed on the developer's machine. All are safe to run:
+
+  | target | what |
+  |---|---|
+  | `make test` | gofmt, go vet, Go tests with ffmpeg (race detector on) |
+  | `make image` | the runtime image `tiatube:dev` |
+  | `make run` / `make run-test` | the image on `http://127.0.0.1:8765/install`, read-only, non-root; `run-test` turns on test mode |
+  | `make stop` | stops it |
+  | `make web` | the bundled web files into `dist/web`, to look at them |
+
+- Test mode (`TIATUBE_TEST=1`) adds `/api/debug-zip` (keeps a ZIP the window built) and `/api/test/loader`. A browser
+  test runs the bookmarklet with the loader: on the video page, with CSP bypassed (CDP `Page.setBypassCSP` and a
+  reload; YouTube's Trusted Types block `eval`), add a `message` listener that evaluates `e.data.ttTestCode`, then
+  `window.open('<origin>/api/test/loader', 'tiatube')` with a user gesture. The loader sends the bookmarklet code, and
+  the bookmarklet reuses that window. A plain `fetch` of the code from the video page waits on Chrome's local network
+  access permission.
+- Testing a capture needs a real desktop Chrome, logged in where the site needs it; no headless browser.
 
 ## Public repository
 
