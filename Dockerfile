@@ -32,7 +32,7 @@ COPY tools/go.mod tools/go.sum tools/
 RUN cd tools && go mod download && go build -o /dev/null github.com/evanw/esbuild/cmd/esbuild
 COPY tools/build-web.sh tools/
 COPY sites.json ./
-COPY poc poc
+COPY assets assets
 COPY web web
 RUN tools/build-web.sh /out
 

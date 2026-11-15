@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tiaTube</title>
+<script>/*HEAD*/</script>
+<style>/*CSS*/</style>
+</head>
+<body>
+<!--LOGOS-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></symbol>
+    <symbol id="i-all" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  </defs>
+</svg>
+<div class="win">
+  <div class="nav"><div class="vt" id="title">Várakozás a videó fülére...</div><div class="meta" id="meta"></div></div>
+  <svg class="logo" viewBox="0 0 100 100" role="img" aria-label="tiaTube"><use id="logo"/></svg>
+  <div class="body">
+    <form id="opts" hidden>
+      <div class="vlist" id="vlist" hidden></div>
+      <div class="cards" id="what"></div>
+      <div class="row">
+        <label id="quality-label" hidden>Minőség</label><div class="seg" id="quality" hidden></div>
+        <label id="format-label">Formátum</label><div class="seg" id="format"></div>
+        <label>Fájlnév előtag</label><div class="seg" id="dfmt"></div>
+        <label>Fájlnév</label><div class="fname" id="fname"></div>
+      </div>
+      <div class="warn" id="fmt-note" hidden>MP4 csak 1080p-ig: a YouTube fölötte csak VP9 vagy AV1 kódolást ad.</div>
+      <div class="warn" id="vnote" hidden></div>
+      <div class="actions"><button class="btn" id="go" type="submit" disabled>Indítás</button></div>
+    </form>
+    <div id="info" hidden>
+      <p>A tiaTube annak az oldalnak a videóját menti, amelyiken épp vagy.</p>
+      <ul class="sites" id="sites"></ul>
+      <p><b>A lényeg:</b> a letöltést a te böngésződ végzi. A szerver csak ott segít, ahol muszáj (összefűzés, MP3);
+        a bejegyzések ZIP-je és a más oldalakról mentett videó teljesen nálad készül.</p>
+      <div class="warn" id="nofound" hidden>Nyisd meg magát a videót vagy a bejegyzést (ne a főoldalt vagy a hírfolyamot),
+        és ott kattints a tiaTube könyvjelzőre.</div>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <ul class="steps" id="steps" hidden></ul>
+    <div class="status" id="total"></div>
+    <div class="result" id="result" hidden></div>
+    <div class="actions" id="run-actions" hidden><button class="btn quiet" id="cancel" type="button">Mégse</button></div>
+  </div>
+</div>
+<script>/*SCRIPT*/</script>
+</body>
+</html>
