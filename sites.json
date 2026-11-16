@@ -1,11 +1,4 @@
 {
-  "web": {
-    "name": "tiaWeb",
-    "word": "Web",
-    "color": "#1b7f86",
-    "logoWordWidth": null,
-    "hosts": []
-  },
   "tube": {
     "name": "tiaTube",
     "word": "Tube",
@@ -26,5 +19,12 @@
     "color": "#da122e",
     "logoWordWidth": null,
     "hosts": ["videa.hu"]
+  },
+  "web": {
+    "name": "tiaWeb",
+    "word": "Web",
+    "color": "#1b7f86",
+    "logoWordWidth": null,
+    "hosts": []
   }
 }
