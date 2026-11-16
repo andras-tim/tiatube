@@ -1,0 +1,21 @@
+# tiaTube behind a reverse proxy that terminates TLS. Copy it to compose.yml and fill in the <placeholders>.
+services:
+  tiatube:
+    image: ghcr.io/andras-tim/tiatube:<version>
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      # the public URL (with its path, when the proxy serves it under one); the bookmarklet calls it
+      TIATUBE_ORIGIN: https://<host>
+      TIATUBE_MAX_JOB: 6GiB
+      TIATUBE_MAX_TOTAL: 24GiB
+    volumes:
+      - tiatube-data:/data
+    ports:
+      - 127.0.0.1:8765:8765
+
+volumes:
+  tiatube-data:

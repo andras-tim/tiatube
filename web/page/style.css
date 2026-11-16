@@ -1,0 +1,79 @@
+/* the tiaTube window */
+@import '../shared/ui.css';
+.win { min-height: 100%; position: relative; display: flex; flex-direction: column; }
+
+form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
+
+.btn.quiet { background: #8a8a86; }
+.actions { margin-top: auto; display: flex; gap: 8px; }
+
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cards.three { grid-template-columns: 1fr 1fr 1fr; }
+.card { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--card); border: 2px solid var(--line);
+  border-radius: 14px; padding: 10px 6px 8px; font: inherit; font-weight: 700; color: var(--muted); text-align: center; cursor: pointer; }
+.card small { font-weight: 400; font-size: 12px; color: var(--muted); }
+.card.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c); color: var(--ink); }
+.card svg { width: 30px; height: 30px; fill: none; stroke: var(--c); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.card:not(.on) svg { filter: grayscale(1); opacity: .45; }
+
+.row { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: center; }
+.row > label { color: var(--muted); font-size: 13px; }
+.seg { display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; color: var(--ink); text-align: center;
+  padding: 4px 6px; border-radius: 7px; white-space: nowrap; cursor: pointer; }
+.seg button.on { background: var(--c); color: #fff; font-weight: 700; }
+.seg button:disabled { color: #b0b0ac; cursor: default; }
+.fname { background: var(--card); border: 1px dashed var(--line); border-radius: 10px; padding: 5px 9px;
+  font: 12px/1.35 ui-monospace, monospace; overflow-wrap: anywhere; }
+.fname .pre { color: var(--c); font-weight: 700; }
+.fname .id, .fname .ext { color: var(--muted); }
+
+/* the run: a checklist with the done, running and waiting steps and their elapsed times */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.steps li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+.steps li .t { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.steps li.todo { color: #9a9a9a; }
+.steps li.now { font-weight: 700; }
+.steps li.err { color: var(--bad); font-weight: 700; }
+.steps li .sub { grid-column: 2 / 4; font-weight: 400; display: flex; flex-direction: column; gap: 4px; }
+.ico { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; }
+.ico.ok { background: var(--ok); color: #fff; }
+.ico.err { background: var(--bad); color: #fff; }
+.ico.run { border: 3px solid var(--line); border-top-color: var(--c); animation: spin 1s linear infinite; }
+.ico.todo { border: 2px solid #c8c8c4; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--c); }
+.status { font-size: 13px; color: var(--muted); }
+.status.bad { color: var(--bad); }
+
+.result { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px;
+  display: flex; flex-direction: column; gap: 4px; }
+.result a { color: var(--c); font-weight: 700; overflow-wrap: anywhere; }
+.result .ok { color: var(--ok); font-weight: 700; }
+.result .bad { color: var(--bad); font-weight: 700; }
+.result .retry { font-size: 12px; color: var(--muted); }
+.result .retry a { color: var(--muted); font-weight: 400; }
+/* tiaWeb: the videos of the page */
+.vlist { display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; }
+.vcard { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; background: var(--card);
+  border: 2px solid var(--line); border-radius: 12px; padding: 6px; font-size: 13px; color: var(--muted); }
+.vcard.ok { cursor: pointer; }
+.vcard.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c); color: var(--ink); }
+.vthumb { width: 96px; height: 54px; border-radius: 6px; background: #222 center / cover no-repeat; }
+.vtxt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.vtxt b { color: var(--ink); }
+.vtxt a { color: var(--c); font-weight: 700; }
+.vtxt .bad { color: var(--bad); }
+/* what tiaTube can do: for a page without a video, or a window opened by hand */
+#info { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+#info p { margin: 0; }
+/* the items of an open playlist */
+.plist { display: flex; flex-direction: column; gap: 2px; max-height: 150px; overflow-y: auto; background: var(--card);
+  border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; font-size: 13px; }
+.plist .head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); padding: 2px 0 4px; }
+.plist .head a { color: var(--c); cursor: pointer; }
+.plist label { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; cursor: pointer; }
+.plist label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plist label small { color: var(--muted); font-variant-numeric: tabular-nums; }

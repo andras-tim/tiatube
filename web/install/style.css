@@ -1,0 +1,34 @@
+/* the install page: the tiaTube window's look, in front of the old page */
+@import '../shared/ui.css';
+
+/* padding, not a margin on the card: a margin would push the page past 100% and add a scroll bar */
+body { height: auto; min-height: 100%; padding: 56px 16px; background: #fff; font-size: 17px; }
+
+/* the old page 1:1, centred; narrower than 1024 px it stays left-aligned (the auto margins go 0). Its navbar's dark
+   strip runs on to both edges. The blur goes over all of it, so the picture's edges blend into the strip and the
+   white; the extra 24 px keep the blurred viewport edges full. Fixed: it never adds to the scroll height. */
+.memory { position: fixed; inset: -24px; padding: 24px; z-index: -1; overflow: hidden; filter: blur(5px);
+  background: linear-gradient(#222 0 74px, #080808 74px 75px, #fff 75px); }
+.memory .old { width: 1024px; aspect-ratio: 1024 / 2045; margin: 0 auto;
+  background: url(../../assets/old-page.webp) top / 100% auto no-repeat; }
+.memory::after { content: ''; position: absolute; inset: 0; background: #3c3c3ccc; }
+
+.card { position: relative; max-width: 560px; margin: 0 auto; background: var(--bg); border-radius: 14px;
+  box-shadow: 0 12px 40px #0009; overflow: hidden; }
+.card .vt { font-size: 22px; }
+.card .meta { font-size: 15px; }
+.card .body { gap: 16px; padding: 34px 20px 20px; }
+.card p { margin: 0; }
+.card .warn { font-size: 14px; }
+
+.install { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.bm { flex: none; font-size: 18px; padding: 12px 22px; text-decoration: none; cursor: grab; }
+.hint { color: var(--muted); font-size: 15px; }
+kbd { font: 600 13px ui-monospace, monospace; background: #fff; border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 5px; padding: 1px 5px; white-space: nowrap; }
+.how { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 2px; }
+
+/* the curved arrow from the button to the bookmarks bar, in page coordinates */
+.arrow { position: absolute; left: 0; top: 0; z-index: 1; overflow: visible; pointer-events: none; fill: none;
+  stroke: var(--c); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 1px 2px #0008); }
+.arrow marker path { fill: var(--c); stroke: none; }

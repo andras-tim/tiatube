@@ -1,0 +1,122 @@
+package main
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"embed"
+	"encoding/hex"
+	"encoding/json"
+	"html"
+	"io/fs"
+	"net/http"
+	"os"
+	"strings"
+)
+
+// The web files (window, install page, bookmarklet, assets) are built into web/ before the server is compiled.
+//
+//go:embed all:web
+var embedded embed.FS
+
+// release is the version the install page shows, set by the build (-X main.release).
+var release = "dev"
+
+type Web struct {
+	cfg   Config
+	files fs.FS
+}
+
+func NewWeb(cfg Config) (*Web, error) {
+	if cfg.WebDir != "" {
+		return &Web{cfg: cfg, files: os.DirFS(cfg.WebDir)}, nil
+	}
+	sub, err := fs.Sub(embedded, "web")
+	return &Web{cfg: cfg, files: sub}, err
+}
+
+func (wb *Web) serve(w http.ResponseWriter, name, ctype string, data []byte) {
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Write(data)
+}
+
+// page serves the window with the current bookmarklet version in it, to compare with the one that opened it.
+func (wb *Web) page(w http.ResponseWriter, r *http.Request) {
+	data, err := fs.ReadFile(wb.files, "index.html")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	src, _ := fs.ReadFile(wb.files, "bookmarklet.js")
+	data = bytes.ReplaceAll(data, []byte("__TT_VERSION__"), []byte(version(src)))
+	wb.serve(w, "index.html", "text/html; charset=utf-8", data)
+}
+
+// version names a build of the bookmarklet by its source, so it changes only when the code does.
+func version(src []byte) string {
+	sum := sha256.Sum256(src)
+	return hex.EncodeToString(sum[:4])
+}
+
+// fillBookmarklet puts this server's origin and the bookmarklet's version in its source.
+func fillBookmarklet(src []byte, origin string) string {
+	return strings.NewReplacer("__TT_ORIGIN__", origin, "__TT_VERSION__", version(src)).Replace(string(src))
+}
+
+// origin is the public URL of this server: configured, or the one the browser used.
+func (wb *Web) origin(r *http.Request) string {
+	if wb.cfg.Origin != "" {
+		return wb.cfg.Origin
+	}
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	return scheme + "://" + r.Host
+}
+
+// install serves the install page with the bookmarklet of this server's origin in it.
+func (wb *Web) install(w http.ResponseWriter, r *http.Request) {
+	page, err1 := fs.ReadFile(wb.files, "install.html")
+	src, err2 := fs.ReadFile(wb.files, "bookmarklet.js")
+	if err1 != nil || err2 != nil {
+		http.NotFound(w, r)
+		return
+	}
+	href := bookmarkletHref(fillBookmarklet(src, wb.origin(r)))
+	page = bytes.ReplaceAll(page, []byte("__TT_BOOKMARKLET_HREF__"), []byte(html.EscapeString(href)))
+	page = bytes.ReplaceAll(page, []byte("__TT_RELEASE__"), []byte(html.EscapeString(release)))
+	wb.serve(w, "install.html", "text/html; charset=utf-8", page)
+}
+
+// bookmarkletHref turns the bookmarklet source into a javascript: URL; whole-line // comments are dropped.
+func bookmarkletHref(src string) string {
+	var lines []string
+	for _, l := range strings.Split(src, "\n") {
+		if !strings.HasPrefix(strings.TrimSpace(l), "//") {
+			lines = append(lines, l)
+		}
+	}
+	return "javascript:" + percentEncode(strings.Join(lines, "\n"))
+}
+
+func (wb *Web) asset(w http.ResponseWriter, r *http.Request) {
+	http.StripPrefix("/", http.FileServerFS(wb.files)).ServeHTTP(w, r)
+}
+
+// testLoader is a page that sends the bookmarklet to the window that opened it, for browser tests that run the
+// bookmarklet on a video page the way the bookmark would (test mode only). It opens in the window the bookmarklet
+// uses, so the bookmarklet only navigates it. The video page needs a listener:
+//
+//	addEventListener('message', (e) => e.data && e.data.ttTestCode && (0, eval)(e.data.ttTestCode))
+func (wb *Web) testLoader(w http.ResponseWriter, r *http.Request) {
+	src, err := fs.ReadFile(wb.files, "bookmarklet.js")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	code, _ := json.Marshal(fillBookmarklet(src, wb.origin(r)))
+	page := "<!doctype html><meta charset=utf-8><script>sessionStorage.setItem('tt-test', '1');" +
+		"opener.postMessage({ttTestCode: " + string(code) + "}, '*')</script>"
+	wb.serve(w, "loader.html", "text/html; charset=utf-8", []byte(page))
+}

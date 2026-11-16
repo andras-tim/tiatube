@@ -1,3 +1,5 @@
-www/js/config.js
-
 .idea/
+__pycache__/
+dist/
+server/web/*
+!server/web/.keep
