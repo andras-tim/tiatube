@@ -1,8 +1,11 @@
 // tiaWeb: the base of every site. It opens the tiaTube window, talks to it, shows a small status on the page, and
 // saves the HTML5 videos of any page: a plain video file streams from the site straight into the window's file.
 // A site class overrides find(), found(), hello() and start(), and the hooks below, nothing else.
-import { CHUNK_SIZE, INFLIGHT_MAX, MSG, WINDOW } from '../../shared/protocol.js';
+import { CHUNK_SIZE, INFLIGHT_MAX, MSG, PROTOCOL, WINDOW } from '../../shared/protocol.js';
 import { concat } from '../../shared/bytes.js';
+
+// for the window's check: this bookmarklet's build (the server puts it in place of __TT_VERSION__) and protocol
+const VERSION = `v=__TT_VERSION__&p=${PROTOCOL}`;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ALERT = 'tiaTube: engedélyezd a felugró ablakot ezen az oldalon';
@@ -77,7 +80,7 @@ export class TiaWeb {
   found() { return !!this.media?.videos.length; }
 
   // the window's URL: the site in it gives the right logo before the first message
-  windowUrl() { return `${this.TT}/window?s=${this.site}`; }
+  windowUrl() { return `${this.TT}/window?s=${this.site}&${VERSION}`; }
 
   hello() {
     const m = this.media;
@@ -93,7 +96,7 @@ export class TiaWeb {
   run() {
     this.media = this.find();
     if (!this.found()) {
-      if (!window.open(`${this.TT}/window?s=info&host=${encodeURIComponent(this.host)}`, WINDOW.name, WINDOW.features)) {
+      if (!window.open(`${this.TT}/window?s=info&host=${encodeURIComponent(this.host)}&${VERSION}`, WINDOW.name, WINDOW.features)) {
         alert(ALERT);
       }
       return;

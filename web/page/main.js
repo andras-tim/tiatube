@@ -1,5 +1,5 @@
 // The tiaTube window: opened by the bookmarklet on a video page, it asks what to save, then runs one of the flows.
-import { MSG } from '../shared/protocol.js';
+import { MSG, PROTOCOL } from '../shared/protocol.js';
 import { gist, siteItems } from '../shared/about.js';
 import { page, st } from './state.js';
 import { $, cardSet, el, mmss, pick, render, sample, segSet, setMeta, show, val, what } from './ui.js';
@@ -226,7 +226,28 @@ const ON = {
   },
 };
 
-if (!window.opener || params.get('s') === 'info') {
+// the bookmarklet that opened this window: 'old' when its protocol is not this window's (it is refused), 'newer'
+// when it is an older build than the server's
+const bookmarkletAge = () => {
+  if (params.get('p') !== String(PROTOCOL)) return 'old';
+  return params.get('v') === document.querySelector('meta[name="tt-version"]').content ? null : 'newer';
+};
+const showUpdate = (age) => {
+  const link = el('a', null, age === 'old' ? 'a tiaTube oldalán' : 'Frissíts');
+  link.href = './';
+  link.target = '_blank';
+  $('update').replaceChildren(...(age === 'old'
+    ? ['Ez a könyvjelző elavult, a tiaTube már nem működik vele. Töröld, és hozd létre újra a gomb felhúzásával ',
+      link, '.']
+    : ['Van újabb tiaTube könyvjelző. ', link, ': töröld a régit, és hozd létre újra a gomb felhúzásával.']));
+  $('update').hidden = false;
+};
+
+const age = window.opener ? bookmarkletAge() : null;
+if (age) showUpdate(age);
+if (age === 'old') {
+  $('title').textContent = 'A tiaTube könyvjelződ elavult';
+} else if (!window.opener || params.get('s') === 'info') {
   showInfo();
 } else {
   const hello = setInterval(() => { if (!st.mode) page.send({ type: MSG.READY }); }, 300);

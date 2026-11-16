@@ -17,6 +17,9 @@ export const MSG = {
 };
 
 export const WINDOW = { name: 'tiatube', features: 'width=520,height=440' };
+// Raise it when an installed bookmarklet can no longer work with this window (a changed message, a security fix): the
+// window then refuses the older bookmarklet and asks for the new one. A newer build alone only gets a note.
+export const PROTOCOL = 1;
 // bytes on the way from the page to the window, not acknowledged yet
 export const INFLIGHT_MAX = 64 * 1048576;
 // one message of a file that streams to the window

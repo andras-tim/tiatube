@@ -39,6 +39,14 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
 - A rule lives in one place. File names are made in the window (`web/page/names.js`; the server only refuses an unsafe
   name); the message protocol's names and limits are in `web/shared/protocol.js`.
 - The server sends status codes, never UI text: the window owns every Hungarian string.
+
+### Bookmarklet versions
+
+- An installed bookmarklet stays as the user dragged it; the window comes fresh from the server. The bookmarklet
+  passes its build (a hash of its source, put in by the server) and `PROTOCOL` (`web/shared/protocol.js`) to the
+  window: an older build gets a note to update, another protocol is refused.
+- Raise `PROTOCOL` when an installed bookmarklet can no longer work with the window or the server (a changed message,
+  a security fix). A change that keeps the old bookmarklet working leaves it alone.
 - A value the server and the client must agree on (e.g. a size limit) comes from the server's API response; the
   client does not hardcode it.
 

@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"html"
 	"io/fs"
@@ -35,13 +37,27 @@ func (wb *Web) serve(w http.ResponseWriter, name, ctype string, data []byte) {
 	w.Write(data)
 }
 
+// page serves the window with the current bookmarklet version in it, to compare with the one that opened it.
 func (wb *Web) page(w http.ResponseWriter, r *http.Request) {
 	data, err := fs.ReadFile(wb.files, "index.html")
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
+	src, _ := fs.ReadFile(wb.files, "bookmarklet.js")
+	data = bytes.ReplaceAll(data, []byte("__TT_VERSION__"), []byte(version(src)))
 	wb.serve(w, "index.html", "text/html; charset=utf-8", data)
+}
+
+// version names a build of the bookmarklet by its source, so it changes only when the code does.
+func version(src []byte) string {
+	sum := sha256.Sum256(src)
+	return hex.EncodeToString(sum[:4])
+}
+
+// fillBookmarklet puts this server's origin and the bookmarklet's version in its source.
+func fillBookmarklet(src []byte, origin string) string {
+	return strings.NewReplacer("__TT_ORIGIN__", origin, "__TT_VERSION__", version(src)).Replace(string(src))
 }
 
 // origin is the public URL of this server: configured, or the one the browser used.
@@ -64,20 +80,20 @@ func (wb *Web) install(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	href := bookmarkletHref(string(src), wb.origin(r))
+	href := bookmarkletHref(fillBookmarklet(src, wb.origin(r)))
 	page = bytes.ReplaceAll(page, []byte("__TT_BOOKMARKLET_HREF__"), []byte(html.EscapeString(href)))
 	wb.serve(w, "install.html", "text/html; charset=utf-8", page)
 }
 
 // bookmarkletHref turns the bookmarklet source into a javascript: URL; whole-line // comments are dropped.
-func bookmarkletHref(src, origin string) string {
+func bookmarkletHref(src string) string {
 	var lines []string
 	for _, l := range strings.Split(src, "\n") {
 		if !strings.HasPrefix(strings.TrimSpace(l), "//") {
 			lines = append(lines, l)
 		}
 	}
-	return "javascript:" + percentEncode(strings.ReplaceAll(strings.Join(lines, "\n"), "__TT_ORIGIN__", origin))
+	return "javascript:" + percentEncode(strings.Join(lines, "\n"))
 }
 
 func (wb *Web) asset(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +111,7 @@ func (wb *Web) testLoader(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	code, _ := json.Marshal(strings.ReplaceAll(string(src), "__TT_ORIGIN__", wb.origin(r)))
+	code, _ := json.Marshal(fillBookmarklet(src, wb.origin(r)))
 	page := "<!doctype html><meta charset=utf-8><script>sessionStorage.setItem('tt-test', '1');" +
 		"opener.postMessage({ttTestCode: " + string(code) + "}, '*')</script>"
 	wb.serve(w, "loader.html", "text/html; charset=utf-8", []byte(page))
