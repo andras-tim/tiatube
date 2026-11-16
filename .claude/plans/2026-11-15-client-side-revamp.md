@@ -212,6 +212,8 @@ In a real desktop Chrome, logged in where the site needs it:
   page). Not pushed.
 - Order as done: 1, 2 (Go backend, Makefile, Docker, CI), 3 (frontend split), 4 (logos, background, install page),
   5 (compose example, README), 6 (playlists).
+- 2026-11-16, milestone 7: the owner tested the install page and the window; reworded texts, logo boxes that fit their
+  word, the bookmarklet version check, the tiaWeb fallback, the cross-origin protection of the API; released 3.0.0.
 - Findings:
   - Chrome starts only the first automatic download of a window; the bookmarklet reuses its window by name, so a
     second run in the same window shows the "újra letöltés" link instead. Playlists avoid it with one ZIP.
@@ -243,6 +245,12 @@ In a real desktop Chrome, logged in where the site needs it:
   - the run shows the queue position and an "Újrakódolás H.264-re" step with a remaining time from the measured ffmpeg
     speed; no estimate before the start (the server CPU differs per deployment);
   - open then: whether Facebook HD becomes MKV by default, and whether a slow choice asks for a confirmation.
+
+- 2026-11-16, an outdated bookmarklet: the window compares the bookmarklet's build (a hash of its source) and
+  `PROTOCOL`; another build gets a note, another protocol is refused. No loader bookmarklet: YouTube's Trusted Types and
+  Facebook's CSP block a script loaded from another origin.
+- 2026-11-16, who may use a server: the API refuses cross-site POSTs (`http.CrossOriginProtection`); limiting the users
+  is the reverse proxy's authentication, outside this repository.
 
 ## Open questions
 
