@@ -270,3 +270,19 @@ func TestRejects(t *testing.T) {
 		t.Errorf("test endpoint without test mode: %d", code)
 	}
 }
+
+func TestCrossOriginRefused(t *testing.T) {
+	s := newTestServer(t, Config{})
+	for site, want := range map[string]int{"cross-site": http.StatusForbidden, "same-origin": http.StatusOK} {
+		req, _ := http.NewRequest("POST", s.URL+"/api/job", strings.NewReader(`{"name":"a","what":"audio"}`))
+		req.Header.Set("Sec-Fetch-Site", site)
+		r, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		if r.StatusCode != want {
+			t.Errorf("Sec-Fetch-Site %s: %d, want %d", site, r.StatusCode, want)
+		}
+	}
+}

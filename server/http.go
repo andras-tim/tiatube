@@ -52,7 +52,9 @@ func (a *API) routes() http.Handler {
 		m.HandleFunc("POST /api/debug-zip", a.debugZip)
 		m.HandleFunc("GET /api/test/loader", a.web.testLoader)
 	}
-	return headers(m)
+	// a page of another site may not start or feed a job through the visitor's browser: POSTs that the browser marks
+	// as cross-site (Sec-Fetch-Site, else Origin) are refused; a job's GETs need its random id
+	return headers(http.NewCrossOriginProtection().Handler(m))
 }
 
 func headers(h http.Handler) http.Handler {
