@@ -15,6 +15,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tags, for the version the Makefile reads with git describe
       - run: make ci
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@v3

@@ -18,6 +18,9 @@ import (
 //go:embed all:web
 var embedded embed.FS
 
+// release is the version the install page shows, set by the build (-X main.release).
+var release = "dev"
+
 type Web struct {
 	cfg   Config
 	files fs.FS
@@ -82,6 +85,7 @@ func (wb *Web) install(w http.ResponseWriter, r *http.Request) {
 	}
 	href := bookmarkletHref(fillBookmarklet(src, wb.origin(r)))
 	page = bytes.ReplaceAll(page, []byte("__TT_BOOKMARKLET_HREF__"), []byte(html.EscapeString(href)))
+	page = bytes.ReplaceAll(page, []byte("__TT_RELEASE__"), []byte(html.EscapeString(release)))
 	wb.serve(w, "install.html", "text/html; charset=utf-8", page)
 }
 

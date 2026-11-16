@@ -1,6 +1,8 @@
 # The one interface for building, testing and running tiaTube, locally and in CI. Everything runs in Docker.
 
 IMAGE ?= tiatube:dev
+# the release the install page shows: major.minor of the last tag (v3.0.0 -> v3.0)
+VERSION ?= $(or $(shell git describe --tags --abbrev=0 2>/dev/null | cut -d. -f1,2),dev)
 PORT ?= 8765
 DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build
 
@@ -28,7 +30,7 @@ test:
 
 ## image: the runtime image
 image:
-	$(DOCKER_BUILD) --target image -t $(IMAGE) .
+	$(DOCKER_BUILD) --target image --build-arg VERSION=$(VERSION) -t $(IMAGE) .
 
 ## push: the image to its registry (IMAGE=<registry>/<name>:<tag>)
 push: image

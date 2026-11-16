@@ -53,7 +53,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build go vet ./...
 RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=1 go test -race -count=1 ./...
 
 FROM server-src AS server
-RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /tiatube .
+ARG VERSION=dev
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -trimpath \
+    -ldflags="-s -w -X main.release=${VERSION}" -o /tiatube .
 
 # ---- runtime image ----
 FROM ${RUNTIME_IMAGE} AS image
