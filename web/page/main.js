@@ -203,6 +203,7 @@ const showInfo = () => {
   $('sites').replaceChildren(...siteItems());
   $('sites').after(gist());
   $('nofound').hidden = !h;
+  $('nothere').hidden = !h;
   $('info').hidden = false;
 };
 
