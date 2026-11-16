@@ -96,7 +96,13 @@ export class TiaWeb {
   run() {
     this.media = this.find();
     if (!this.found()) {
-      if (!window.open(`${this.TT}/window?s=info&host=${encodeURIComponent(this.host)}&${VERSION}`, WINDOW.name, WINDOW.features)) {
+      // the site's own class found nothing: tiaWeb looks for any video on the page; nothing there either ends here
+      if (this.site !== 'web') {
+        new TiaWeb(this.TT, 'web').run();
+        return;
+      }
+      if (!window.open(`${this.TT}/window?s=web&k=info&host=${encodeURIComponent(this.host)}&${VERSION}`, WINDOW.name,
+        WINDOW.features)) {
         alert(ALERT);
       }
       return;

@@ -248,7 +248,7 @@ const age = window.opener ? bookmarkletAge() : null;
 if (age) showUpdate(age);
 if (age === 'old') {
   $('title').textContent = 'A tiaTube könyvjelződ elavult';
-} else if (!window.opener || params.get('s') === 'info') {
+} else if (!window.opener || params.get('k') === 'info') {
   showInfo();
 } else {
   const hello = setInterval(() => { if (!st.mode) page.send({ type: MSG.READY }); }, 300);
