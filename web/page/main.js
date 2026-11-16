@@ -244,6 +244,13 @@ const showUpdate = (age) => {
   $('update').hidden = false;
 };
 
+// the popup grows with its content instead of scrolling (a window opened by a script may resize itself); it never
+// shrinks, so it does not jump while a run changes the content
+new ResizeObserver(() => {
+  const extra = document.documentElement.scrollHeight - innerHeight;
+  if (extra > 0) window.resizeBy(0, Math.min(extra, screen.availHeight - outerHeight));
+}).observe(document.body);
+
 const age = window.opener ? bookmarkletAge() : null;
 if (age) showUpdate(age);
 if (age === 'old') {
