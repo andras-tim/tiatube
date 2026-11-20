@@ -136,7 +136,7 @@ export class TiaWeb {
   }
 
   message(ev) {
-    if (ev.origin !== this.TT || ev.source !== this.w) return;
+    if (ev.origin !== new URL(this.TT).origin || ev.source !== this.w) return;
     const m = ev.data || {};
     if (m.type === MSG.READY) {
       this.post({ type: MSG.HELLO, ...this.hello() });
