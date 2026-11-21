@@ -2,10 +2,12 @@
 import { MSG } from '../shared/protocol.js';
 import { TEST, page, st } from './state.js';
 import { $, download, downloaded, el, render, result, step } from './ui.js';
+import { advice } from './advice.js';
 
 const LOST = { post: 'A ZIP nem készült el.', web: 'A videó nem mentődött el.' };
 
-export const fail = (err) => {
+// byUser: the user's cancel, no advice
+export const fail = (err, byUser = false) => {
   if (st.cancelled) return;
   st.cancelled = true;
   page.send({ type: MSG.CANCEL });
@@ -16,7 +18,7 @@ export const fail = (err) => {
   if (cur) step(cur.key, 'err', { err: String(err.message || err) });
   st.done = true;
   render();
-  result([el('span', 'bad', LOST[st.mode] || 'A fájl nem készült el.')]);
+  result([el('span', 'bad', LOST[st.mode] || 'A fájl nem készült el.'), ...(byUser ? [] : [' ', ...advice()])]);
 };
 
 // the server drops an unfinished job and stops its ffmpeg

@@ -13,9 +13,11 @@ export const hostOf = (url) => { try { return new URL(url).hostname; } catch (e)
 export const mmss = (d) => (d ? `${Math.floor(d / 60)}:${pad(Math.round(d) % 60)}` : '');
 export const mbOf = (n) => (n / 1048576).toFixed(n < 10485760 ? 1 : 0);
 export const setMeta = (parts) => { $('meta').textContent = parts.filter(Boolean).join(' · '); };
+// t: a text or a list of texts and elements; empty hides it
 export const warn = (t) => {
-  $('warn').textContent = t;
-  $('warn').hidden = !t;
+  const parts = [].concat(t || []);
+  $('warn').replaceChildren(...parts);
+  $('warn').hidden = !parts.length;
 };
 
 // ---- choices: cards and segmented buttons; the value is in the box's data-value ----

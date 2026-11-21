@@ -2,7 +2,8 @@
 import { MSG, PROTOCOL } from '../shared/protocol.js';
 import { gist, siteItems } from '../shared/about.js';
 import { page, st } from './state.js';
-import { $, cardSet, el, mmss, pick, render, sample, segSet, setMeta, show, val, what } from './ui.js';
+import { $, cardSet, el, mmss, pick, render, sample, segSet, setMeta, show, val, warn, what } from './ui.js';
+import { advice } from './advice.js';
 import { prefixOf, safeName, stamp } from './names.js';
 import { PARTS } from './parts.js';
 import { dropJob, fail } from './run.js';
@@ -11,6 +12,9 @@ import * as post from './flows/post.js';
 import * as web from './flows/web.js';
 
 const params = new URLSearchParams(location.search);
+// the video page answers in this time, a run hears from the page or the server in this time
+const NO_ANSWER_MS = 10000;
+const STALL_MS = 60000;
 st.site = document.documentElement.dataset.site;
 $('logo').setAttribute('href', `#logo-tia${st.site}`);
 // until the video tab answers: a neutral title, no form
@@ -176,6 +180,7 @@ const picked = () => {
 
 // ---- the conversation with the video tab ----
 const onHello = (m) => {
+  if (!st.info) warn('');
   st.info = m;
   $('title').textContent = m.title;
   if (m.kind === 'web') {
@@ -252,6 +257,7 @@ new ResizeObserver(() => {
 }).observe(document.body);
 
 const age = window.opener ? bookmarkletAge() : null;
+st.age = age;
 if (age) showUpdate(age);
 if (age === 'old') {
   $('title').textContent = 'A tiaTube könyvjelződ elavult';
@@ -259,9 +265,16 @@ if (age === 'old') {
   showInfo();
 } else {
   const hello = setInterval(() => { if (!st.mode) page.send({ type: MSG.READY }); }, 300);
+  // no answer from the video page: an outdated bookmarklet, or a page that changed since the bookmarklet ran
+  setTimeout(() => {
+    if (st.info) return;
+    $('title').textContent = 'A videó oldala nem válaszol';
+    warn(advice());
+  }, NO_ANSWER_MS);
   window.addEventListener('message', (ev) => {
     if (ev.source !== window.opener || (page.origin !== '*' && ev.origin !== page.origin)) return;
     page.origin = ev.origin;
+    st.alive = Date.now();
     const m = ev.data || {};
     if (m.type === MSG.HELLO) {
       if (!st.mode && onHello(m)) clearInterval(hello);
@@ -284,6 +297,29 @@ $('opts').onsubmit = (ev) => {
   ev.preventDefault();
   ({ post: post.start, web: web.start })[st.info?.kind]?.() ?? server.start(st.info?.playlist ? picked() : null);
 };
-$('cancel').onclick = () => fail(new Error('megszakítottad'));
+$('cancel').onclick = () => fail(new Error('megszakítottad'), true);
+
+// a run that waits on the page or the server and hears nothing from them: stalled. The post and web flows work in this
+// window after the page's end, without messages.
+let stalled = false, runAt = 0;
+setInterval(() => {
+  if (st.mode && !runAt) runAt = Date.now();
+  const waits = st.mode && !st.done && !st.cancelled && !(st.end && (st.mode === 'post' || st.mode === 'web'));
+  const now = waits && Date.now() - Math.max(st.alive, runAt) > STALL_MS;
+  if (now === stalled) return;
+  stalled = now;
+  warn(now ? ['Már egy perce nem halad. ', ...advice()] : '');
+}, 1000);
+
+// an error of the window's own code: it fails the run, or warns before one (an error event without an error object,
+// e.g. the ResizeObserver loop note, is not one)
+const crash = (err) => {
+  if (!err) return;
+  console.error('tiaTube', err);
+  if (st.mode && !st.done) fail(err);
+  else warn([`Hiba a tiaTube ablakban: ${err.message || err}. `, ...advice()]);
+};
+addEventListener('error', (ev) => crash(ev.error));
+addEventListener('unhandledrejection', (ev) => crash(ev.reason));
 // a closed window leaves no job behind on the server
 addEventListener('pagehide', dropJob);

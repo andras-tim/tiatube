@@ -129,6 +129,7 @@ const poll = async (c) => {
     setTimeout(() => poll(c), 2000);
     return;
   }
+  st.alive = Date.now();
   if (s.state === 'error' || s.error) {
     c.reject(new Error(say(s.error || 'ismeretlen hiba')));
     return;
