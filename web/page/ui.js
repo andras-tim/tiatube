@@ -140,7 +140,14 @@ export const render = () => {
         bar.append(fill);
         parts.push(bar);
       }
-      if (s.sub.text) parts.push(el('span', 'status', s.sub.text));
+      // under the bar: the text on the left, the fragment being collected on the right (the total is not known)
+      if (s.sub.count) {
+        const line = el('div', 'subline');
+        line.append(el('span', 'status', s.sub.text || ''), el('span', 'count', s.sub.count));
+        parts.push(line);
+      } else if (s.sub.text) {
+        parts.push(el('span', 'status', s.sub.text));
+      }
     }
     if (s.state === 'err' && s.err) parts.push(el('span', 'status bad', s.err));
     r.sub.replaceChildren(...parts);

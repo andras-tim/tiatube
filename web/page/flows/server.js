@@ -26,7 +26,7 @@ let cur = null;
 
 // item: { videoId, title, author, url, thumbs, duration, ts }; view(stage, state, sub) shows the progress
 const runJob = (item, opts, name, view) => new Promise((resolve, reject) => {
-  cur = { item, view, resolve, reject, queue: [], active: 0, sentBytes: 0, end: null, finished: false };
+  cur = { item, view, resolve, reject, queue: [], active: 0, sentBytes: 0, parts: 0, sent: 0, capture: null, end: null, finished: false };
   st.end = null;
   st.finished = false;
   view('connect', 'now');
@@ -49,7 +49,10 @@ export const frag = (m) => {
   if (!cur) return;
   st.got++;
   st.gotBytes += m.buf.byteLength;
+  if (m.kind === 'frag') cur.parts++;
   cur.queue.push(m);
+  // every fragment moves the capture's count, the page's progress comes only twice a second
+  if (!cur.end && cur.capture) cur.view('capture', 'now', { ...cur.capture, count: `${cur.parts + 1}. töredék` });
   cur.view('upload', 'now');
   pump();
 };
@@ -57,7 +60,9 @@ export const frag = (m) => {
 export const progress = (m) => {
   if (!cur) return;
   cur.view('connect', 'ok');
-  cur.view('capture', 'now', { pct: m.pct, text: m.text });
+  // the fragment being collected, so the count starts at 1
+  cur.capture = { pct: m.pct, text: m.text };
+  cur.view('capture', 'now', { ...cur.capture, count: `${cur.parts + 1}. töredék` });
 };
 
 export const end = (m) => {
@@ -95,8 +100,11 @@ const pump = () => {
       c.active--;
       c.sentBytes += m.buf.byteLength;
       st.sentBytes += m.buf.byteLength;
+      if (m.kind === 'frag') c.sent++;
       sample('up', st.sentBytes);
-      c.view('upload', 'now', { text: `${(c.sentBytes / 1048576).toFixed(1)} MB${c.end ? '' : ' · lépést tart'}` });
+      // the fragment being uploaded, as the capture shows the one being collected
+      c.view('upload', 'now', { text: `${(c.sentBytes / 1048576).toFixed(1)} MB${c.end ? '' : ' · lépést tart'}`,
+        count: `${Math.min(c.sent + 1, Math.max(c.parts, 1))}. töredék` });
       page.send({ type: MSG.ACK, bytes: m.buf.byteLength });
       render();
       pump();
@@ -221,7 +229,10 @@ const startList = async (items) => {
       const r = await runJob({ videoId: it.id, title: it.title, url: `https://www.youtube.com/watch?v=${it.id}`,
         thumbs: it.thumbs, duration: it.dur, ts: it.id === info.videoId ? info.ts : 0 }, opts,
       safeName(`${nn} ${it.title} [${it.id}]`), (key, state, sub) => {
-        if (state === 'now') step('items', 'now', { sub: { pct: sub?.pct, text: `${head} · ${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}` } });
+        if (state === 'now') {
+          step('items', 'now', { sub: { pct: sub?.pct, count: sub?.count,
+            text: `${head} · ${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}` } });
+        }
       });
       const data = new Uint8Array(await (await fetch(r.href)).arrayBuffer());
       await st.zip.add(r.name, data, Date.now() / 1000);
