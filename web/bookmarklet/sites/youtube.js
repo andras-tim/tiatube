@@ -32,7 +32,7 @@ export class TiaTube extends TiaWeb {
     this.bufs = [];
     this.msSeq = 0;
     this.block = [];
-    hookOnce();
+    hook();
   }
 
   // one video: the page's, or another item of its playlist; the window starts the items one after the other
@@ -156,17 +156,21 @@ function playlistOf(p) {
     items: ids.map((id) => ({ id, thumbs: thumbsOf(id), ...(panel.get(id) || { title: id, dur: 0 }) })) };
 }
 
-// the hooks are installed once per page; they act only while the current run captures
-function hookOnce() {
-  if (MediaSource.prototype.__ttHooked) return;
+// The hooks act only while the current run captures. Every run installs them again over the browser's own functions,
+// kept on the first run: each click evaluates the bookmarklet anew, so a hook of an earlier run knows only its own
+// TiaTube class and would never see this run (a second click on a page, or the next video of the same page).
+function hook() {
+  const o = MediaSource.__ttOrig || (MediaSource.__ttOrig = { isSupported: MediaSource.isTypeSupported,
+    add: MediaSource.prototype.addSourceBuffer, append: SourceBuffer.prototype.appendBuffer,
+    change: SourceBuffer.prototype.changeType });
   const cur = () => (window.__tiatube instanceof TiaTube && window.__tiatube.capturing ? window.__tiatube : null);
-  const isSupported = MediaSource.isTypeSupported.bind(MediaSource);
+  const isSupported = o.isSupported.bind(MediaSource);
   // codec steering: the player picks another format when one is "not supported"
   MediaSource.isTypeSupported = (t) => {
     const s = cur();
     return s && s.block.some((b) => t.includes(b)) ? false : isSupported(t);
   };
-  const add = MediaSource.prototype.addSourceBuffer;
+  const add = o.add;
   MediaSource.prototype.addSourceBuffer = function (mime) {
     const sb = add.call(this, mime);
     const s = cur();
@@ -178,7 +182,7 @@ function hookOnce() {
     }
     return sb;
   };
-  const append = SourceBuffer.prototype.appendBuffer;
+  const append = o.append;
   SourceBuffer.prototype.appendBuffer = function (d) {
     const e = this.__tt;
     if (e && e.owner === cur()) {
@@ -188,8 +192,8 @@ function hookOnce() {
     }
     return append.call(this, d);
   };
-  if (SourceBuffer.prototype.changeType) {
-    const change = SourceBuffer.prototype.changeType;
+  if (o.change) {
+    const change = o.change;
     SourceBuffer.prototype.changeType = function (t) {
       const e = this.__tt;
       if (e) {
@@ -202,7 +206,6 @@ function hookOnce() {
       return change.call(this, t);
     };
   }
-  MediaSource.prototype.__ttHooked = true;
 }
 
 // the publish time in Unix seconds, 0 when unknown; the initial player response only while it is the current video
