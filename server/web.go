@@ -2,9 +2,7 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"embed"
-	"encoding/hex"
 	"encoding/json"
 	"html"
 	"io/fs"
@@ -40,27 +38,19 @@ func (wb *Web) serve(w http.ResponseWriter, name, ctype string, data []byte) {
 	w.Write(data)
 }
 
-// page serves the window with the current bookmarklet version in it, to compare with the one that opened it.
+// page serves the window.
 func (wb *Web) page(w http.ResponseWriter, r *http.Request) {
 	data, err := fs.ReadFile(wb.files, "index.html")
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	src, _ := fs.ReadFile(wb.files, "bookmarklet.js")
-	data = bytes.ReplaceAll(data, []byte("__TT_VERSION__"), []byte(version(src)))
 	wb.serve(w, "index.html", "text/html; charset=utf-8", data)
 }
 
-// version names a build of the bookmarklet by its source, so it changes only when the code does.
-func version(src []byte) string {
-	sum := sha256.Sum256(src)
-	return hex.EncodeToString(sum[:4])
-}
-
-// fillBookmarklet puts this server's origin and the bookmarklet's version in its source.
+// fillBookmarklet puts this server's origin in the bookmarklet's source.
 func fillBookmarklet(src []byte, origin string) string {
-	return strings.NewReplacer("__TT_ORIGIN__", origin, "__TT_VERSION__", version(src)).Replace(string(src))
+	return strings.ReplaceAll(string(src), "__TT_ORIGIN__", origin)
 }
 
 // origin is the public URL of this server: configured, or the one the browser used.

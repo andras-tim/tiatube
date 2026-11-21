@@ -235,11 +235,8 @@ func TestJanitor(t *testing.T) {
 }
 
 func TestFillBookmarklet(t *testing.T) {
-	src := []byte("run('__TT_ORIGIN__', 'v=__TT_VERSION__')")
-	if got, want := fillBookmarklet(src, "https://tt.example"), "run('https://tt.example', 'v="+version(src)+"')"; got != want {
+	src := []byte("run('__TT_ORIGIN__', 'n=1')")
+	if got, want := fillBookmarklet(src, "https://tt.example"), "run('https://tt.example', 'n=1')"; got != want {
 		t.Fatalf("fillBookmarklet = %q, want %q", got, want)
-	}
-	if v := version(src); len(v) != 8 || v == version([]byte("other code")) {
-		t.Fatalf("version %q: want 8 hex digits that differ between sources", v)
 	}
 }

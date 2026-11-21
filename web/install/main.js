@@ -1,5 +1,6 @@
 // The install page: a greeting, the main idea and the arrow to the bookmarks bar.
 import { gist } from '../shared/about.js';
+import { BOOKMARKLET } from '../shared/protocol.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -10,6 +11,9 @@ $('hello').textContent = HELLOS[Math.floor(Math.random() * HELLOS.length)];
 if (/Mac|iPhone|iPad/.test(navigator.platform)) $('bar-keys').textContent = 'Cmd+Shift+B';
 
 document.querySelector('.how').after(gist());
+
+// the bookmark gets the button's name: its number tells the latest one in the bookmarks bar
+document.querySelector('.bm').textContent = `tiaTube v${BOOKMARKLET}`;
 
 // a click instead of a drag: the bookmarklet only works from the bookmarks bar
 document.querySelector('.bm').addEventListener('click', (ev) => {

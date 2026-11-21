@@ -1,9 +1,9 @@
 // The tiaTube window: opened by the bookmarklet on a video page, it asks what to save, then runs one of the flows.
-import { MSG, PROTOCOL } from '../shared/protocol.js';
+import { BOOKMARKLET, MSG, PROTOCOL } from '../shared/protocol.js';
 import { gist, siteItems } from '../shared/about.js';
 import { page, st } from './state.js';
 import { $, cardSet, el, mmss, pick, render, sample, segSet, setMeta, show, val, warn, what } from './ui.js';
-import { advice } from './advice.js';
+import { advice, installLink } from './advice.js';
 import { prefixOf, safeName, stamp } from './names.js';
 import { PARTS } from './parts.js';
 import { dropJob, fail } from './run.js';
@@ -232,21 +232,26 @@ const ON = {
   },
 };
 
-// the bookmarklet that opened this window: 'old' when its protocol is not this window's (it is refused), 'newer'
-// when it is an older build than the server's
+// the number of the bookmarklet that opened this window; 0: one before the numbers (3.0.x)
+const number = Number(params.get('n')) || 0;
+// its age: 'old' when its protocol is not this window's (it is refused), 'newer' when a newer one exists
 const bookmarkletAge = () => {
   if (params.get('p') !== String(PROTOCOL)) return 'old';
-  return params.get('v') === document.querySelector('meta[name="tt-version"]').content ? null : 'newer';
+  return number < BOOKMARKLET ? 'newer' : null;
 };
 const showUpdate = (age) => {
-  const link = el('a', null, age === 'old' ? 'a tiaTube oldalán' : 'Frissíts');
-  link.href = './';
-  link.target = '_blank';
   $('update').replaceChildren(...(age === 'old'
     ? ['Ez a könyvjelző elavult, a tiaTube már nem működik vele. Töröld, és hozd létre újra a gomb felhúzásával ',
-      link, '.']
-    : ['Van újabb tiaTube könyvjelző. ', link, ': töröld a régit, és hozd létre újra a gomb felhúzásával.']));
+      installLink('a tiaTube oldalán'), '.']
+    : [`Van újabb tiaTube könyvjelző (v${BOOKMARKLET}). `, installLink('Frissíts'),
+      ': töröld a régit, és hozd létre újra a gomb felhúzásával.']));
   $('update').hidden = false;
+};
+// the number of the bookmarklet always shows, so the user knows which one of the bookmarks bar is the latest
+const showNumber = (age) => {
+  const name = number ? `tiaTube v${number}` : 'régi tiaTube';
+  $('bm').textContent = `Könyvjelző: ${name}, ${age ? 'elavult' : 'a legfrissebb'}`;
+  $('bm').hidden = false;
 };
 
 // the popup grows with its content instead of scrolling (a window opened by a script may resize itself); it never
@@ -259,6 +264,8 @@ new ResizeObserver(() => {
 const age = window.opener ? bookmarkletAge() : null;
 st.age = age;
 if (age) showUpdate(age);
+// also on a page without a video: a click there tells whether this bookmarklet is the latest one
+if (window.opener) showNumber(age);
 if (age === 'old') {
   $('title').textContent = 'A tiaTube könyvjelződ elavult';
 } else if (!window.opener || params.get('k') === 'info') {

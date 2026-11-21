@@ -1,11 +1,11 @@
 // tiaWeb: the base of every site. It opens the tiaTube window, talks to it, shows a small status on the page, and
 // saves the HTML5 videos of any page: a plain video file streams from the site straight into the window's file.
 // A site class overrides find(), found(), hello() and start(), and the hooks below, nothing else.
-import { CHUNK_SIZE, INFLIGHT_MAX, MSG, PROTOCOL, WINDOW } from '../../shared/protocol.js';
+import { BOOKMARKLET, CHUNK_SIZE, INFLIGHT_MAX, MSG, PROTOCOL, WINDOW } from '../../shared/protocol.js';
 import { concat } from '../../shared/bytes.js';
 
-// for the window's check: this bookmarklet's build (the server puts it in place of __TT_VERSION__) and protocol
-const VERSION = `v=__TT_VERSION__&p=${PROTOCOL}`;
+// for the window's check: this bookmarklet's number and protocol
+const VERSION = `n=${BOOKMARKLET}&p=${PROTOCOL}`;
 // the window has this long to get its first answer, or the page's box tells that it does not work
 const ANSWER_MS = 10000;
 const BOX = 'position:fixed;top:12px;right:12px;z-index:2147483647;background:#222;color:#fff;'

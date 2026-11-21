@@ -43,8 +43,12 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
 ### Bookmarklet versions
 
 - An installed bookmarklet stays as the user dragged it; the window comes fresh from the server. The bookmarklet
-  passes its build (a hash of its source, put in by the server) and `PROTOCOL` (`web/shared/protocol.js`) to the
-  window: an older build gets a note to update, another protocol is refused.
+  passes its number (`BOOKMARKLET`) and `PROTOCOL` (`web/shared/protocol.js`) to the window: an older number gets a
+  note to update, another protocol is refused. The install page names the button `tiaTube v<number>`.
+- Raise `BOOKMARKLET` with every change of the bookmarklet's build, then add its `<number> <build>` line to
+  `web/bookmarklet/builds.txt`; `make check-bookmarklet` (part of `make ci`) fails until then.
+- A check of a failure belongs in the window, which every bookmarklet gets fresh; the bookmarklet only checks what the
+  window cannot see (a failure before the window opens, a window it cannot answer).
 - Raise `PROTOCOL` when an installed bookmarklet can no longer work with the window or the server (a changed message,
   a security fix). A change that keeps the old bookmarklet working leaves it alone.
 - A value the server and the client must agree on (e.g. a size limit) comes from the server's API response; the

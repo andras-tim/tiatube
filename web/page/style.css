@@ -47,6 +47,7 @@ form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 .bar > i { display: block; height: 100%; background: var(--c); }
 .status { font-size: 13px; color: var(--muted); }
 .status.bad { color: var(--bad); }
+.bmnote { margin-top: 8px; font-size: 11px; color: var(--muted); text-align: right; }
 
 .result { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px;
   display: flex; flex-direction: column; gap: 4px; }
