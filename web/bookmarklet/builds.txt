@@ -1,3 +1,3 @@
 # <bookmarklet number> <the first 8 hex digits of the sha256 of the built bookmarklet.js>, one line per number,
 # the current one last; checked by make check-bookmarklet
-1 418cc1cd
+1 ee516a45

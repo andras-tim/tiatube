@@ -12,5 +12,7 @@ const site = siteOf(location.hostname);
 try {
   new (CLASSES[site] || TiaWeb)('__TT_ORIGIN__', site).run();
 } catch (err) {
-  trouble('__TT_ORIGIN__', err);
+  // one box on the page: an earlier run's, unless it still captures
+  const prev = window.__tiatube;
+  trouble('__TT_ORIGIN__', err, prev && !prev.capturing && prev.ui?.isConnected ? prev.ui : undefined);
 }
