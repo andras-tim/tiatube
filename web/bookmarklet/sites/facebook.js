@@ -166,6 +166,13 @@ function walkObj(o, d, fn) {
 
 const noTags = (t) => t.replace(/#[\p{L}\p{N}_]+/gu, '');
 
+// a tab title that names only the section, not the video
+const GENERIC = /^(facebook|vide[oó]k?|videos?|watch|reels?)$/i;
+
+// the first longer text of the page's main part that is not the author's name: the text of the shown video
+const shownText = (author) => [...document.querySelectorAll('[role="main"] span[dir="auto"]')]
+  .map((s) => s.textContent.trim()).find((t) => t.length > 15 && !(author && t.startsWith(author))) || '';
+
 // the video of the URL, from the page's JSON (a video reached by in-page navigation is not there: reload)
 function findVideo() {
   const m = location.href.match(/[?&]v=(\d+)/) || location.pathname.match(/\/(?:videos|reel|watch)\/(?:[^/]+\/)*?(\d{6,})/);
@@ -195,9 +202,11 @@ function findVideo() {
     try { walk(JSON.parse(s.textContent), 0); } catch (e) { /* not JSON */ }
   }
   if (!r.reps || !r.dur) return null;
+  // a watch page's JSON has neither title nor text: the text shown under the player, then the tab's title unless it is
+  // only the section's name ("Videó | Facebook")
   const page = document.title.replace(/^\(\d+\)\s*/, '').replace(/\s*\|\s*Facebook$/, '');
-  const caption = noTags(r.caption.split('\n')[0]).replace(/\s+/g, ' ').trim();
-  r.title = (r.title || caption || (page !== 'Facebook' && page) || `${r.author || 'Facebook'} videó`).split('\n')[0]
+  const caption = noTags((r.caption || shownText(r.author)).split('\n')[0]).replace(/\s+/g, ' ').trim();
+  r.title = (r.title || caption || (!GENERIC.test(page) && page) || `${r.author || 'Facebook'} videója`).split('\n')[0]
     .slice(0, 150);
   r.ts = r.ts || r.storyTs;
   return r;
