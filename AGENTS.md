@@ -81,6 +81,8 @@ The UI is in Hungarian; everything else (code, comments, docs, commit messages) 
   Chrome allows only the first automatic download of a window. A plain `fetch` of the code from the video page waits on Chrome's local network
   access permission.
 - Testing a capture needs a real desktop Chrome, logged in where the site needs it; no headless browser.
+- After a fix and before a release, run the `smoke-test` skill item by item: a fix often breaks a flow it does not
+  touch.
 
 ## Public repository
 
