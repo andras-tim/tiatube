@@ -9,6 +9,13 @@ Run it after every fix and before every release. A fix often breaks a flow it do
 capture of a non-cached 4K video lost its last part, an older bug no single test had shown). Report the result as a
 table: item, result, and for a failure what came instead.
 
+How much to run:
+
+- **Before a release:** the whole list.
+- **A fix limited to one site's class** (e.g. `sites/facebook.js`): that site's items, the bookmarklet number items
+  (1, 2, 4) when the bookmarklet's build changed, and one YouTube MP3 (10) as a control.
+- **Any other fix** (the window, `core/`, the server): the whole list.
+
 ## Setup
 
 1. `make ci` is green.
