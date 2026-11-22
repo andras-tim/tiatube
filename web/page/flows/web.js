@@ -130,7 +130,8 @@ const finish = async () => {
   step('save', 'now');
   render();
   const blob = await w.sink.close();
-  const out = [el('span', 'ok', `Kész: ${mbOf(w.got)} MB.`), ...await saved(w.sink, blob)];
+  const done = w.len && w.got === w.len ? 'Kész, teljes' : 'Kész';
+  const out = [el('span', 'ok', `${done}: ${mbOf(w.got)} MB.`), ...await saved(w.sink, blob)];
   step('save', 'ok');
   st.done = true;
   $('run-actions').hidden = true;
