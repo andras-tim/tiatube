@@ -25,7 +25,7 @@ export class TiaTube extends TiaWeb {
   hello() {
     const m = this.media;
     return { videoId: m.videoId, title: m.title, url: m.url, author: m.author, ts: m.ts, duration: m.dur,
-      thumbs: m.thumbs, levels: m.player.getAvailableQualityLevels(), playlist: m.playlist };
+      thumbs: m.thumbs, levels: levelsOf(m.player), playlist: m.playlist };
   }
 
   prepare() {
@@ -127,7 +127,8 @@ export class TiaTube extends TiaWeb {
     const ms = {};
     for (const b of this.bufs) ms[b.msId] = b.msDur;
     this.capturing = false;
-    this.post({ type: MSG.END, ms, duration: this.dur, videoId: this.target });
+    this.post({ type: MSG.END, ms, duration: this.dur, videoId: this.target,
+      formats: formatsOf(this.media.player, this.block) });
     this.show('kész, a többi a tiaTube ablakban');
   }
 }
@@ -156,6 +157,56 @@ function playlistOf(p) {
     items: ids.map((id) => ({ id, thumbs: thumbsOf(id), ...(panel.get(id) || { title: id, dur: 0 }) })) };
 }
 
+// the levels the video is offered in: the player lists only what the page's codec answers allow (under h264ify at
+// most 1080p), the capture asks the browser itself, so the offered formats count
+const LEVEL = { 4320: 'highres', 2160: 'hd2160', 1440: 'hd1440', 1080: 'hd1080', 720: 'hd720', 480: 'large',
+  360: 'medium', 240: 'small', 144: 'tiny' };
+function levelsOf(p) {
+  const offered = (p.getPlayerResponse?.()?.streamingData?.adaptiveFormats || [])
+    .map((f) => LEVEL[parseInt(f.qualityLabel, 10)]).filter(Boolean);
+  return [...new Set([...(p.getAvailableQualityLevels() || []), ...offered])];
+}
+
+// What the player played (from its stats: "av01... (394) / opus (251)") and the best audio track the user's session
+// offers for this run's codecs (dubbed tracks left out), so the window can tell whether the best one came. Best: the
+// site's quality class, then the codec (Opus before AAC at a similar bitrate, as yt-dlp sorts), then the bitrate.
+function formatsOf(p, block) {
+  const out = {};
+  try {
+    const [video, audio] = (p.getStatsForNerds().codecs || '').split(' / ');
+    out.video = Number((video || '').match(/\((\d+)\)/)?.[1]) || 0;
+    out.audio = Number((audio || '').match(/\((\d+)\)/)?.[1]) || 0;
+  } catch (e) { /* no stats */ }
+  const rank = { AUDIO_QUALITY_HIGH: 3, AUDIO_QUALITY_MEDIUM: 2, AUDIO_QUALITY_LOW: 1 };
+  const codec = (f) => (f.mimeType.includes('opus') ? 2 : f.mimeType.includes('mp4a') ? 1 : 0);
+  const all = p.getPlayerResponse?.()?.streamingData?.adaptiveFormats || [];
+  const label = (f) => f && { itag: f.itag, codec: (f.mimeType.match(/codecs="([^".]+)/) || [])[1] || '',
+    kbps: Math.round(f.bitrate / 1000), label: f.qualityLabel || '' };
+  const audio = all.filter((f) => f.mimeType.startsWith('audio/') && !block.some((b) => f.mimeType.includes(b))
+    && !/dubbed/.test(decodeTags(f.xtags)));
+  audio.sort((a, b) => (rank[b.audioQuality] || 0) - (rank[a.audioQuality] || 0) || codec(b) - codec(a)
+    || b.bitrate - a.bitrate);
+  out.best = label(audio[0]);
+  const of = (itag) => label(all.find((f) => f.itag === itag));
+  out.got = { audio: of(out.audio), video: of(out.video) };
+  return out;
+}
+
+// the xtags of a format are a base64url protobuf; its text is enough to find "dubbed"
+const decodeTags = (x) => {
+  try { return x ? atob(x.replace(/-/g, '+').replace(/_/g, '/')) : ''; } catch (e) { return ''; }
+};
+
+// the browser's own answer: an extension may hide codecs from the page's function (h264ify answers '' for VP9, AV1
+// and Opus), so the capture asks the function of a fresh frame, which no content script has wrapped yet
+function nativeSupport() {
+  const f = document.createElement('iframe');
+  f.style.display = 'none';
+  document.documentElement.appendChild(f);
+  const ms = f.contentWindow.MediaSource;
+  return ms.isTypeSupported.bind(ms);
+}
+
 // The hooks act only while the current run captures. Every run installs them again over the browser's own functions,
 // kept on the first run: each click evaluates the bookmarklet anew, so a hook of an earlier run knows only its own
 // TiaTube class and would never see this run (a second click on a page, or the next video of the same page).
@@ -163,12 +214,15 @@ function hook() {
   const o = MediaSource.__ttOrig || (MediaSource.__ttOrig = { isSupported: MediaSource.isTypeSupported,
     add: MediaSource.prototype.addSourceBuffer, append: SourceBuffer.prototype.appendBuffer,
     change: SourceBuffer.prototype.changeType });
+  if (!o.native) o.native = nativeSupport();
   const cur = () => (window.__tiatube instanceof TiaTube && window.__tiatube.capturing ? window.__tiatube : null);
   const isSupported = o.isSupported.bind(MediaSource);
-  // codec steering: the player picks another format when one is "not supported"
+  // while capturing: the browser's own answer, so the player takes its best format, except the codecs the run blocks
+  // (the player then picks another one); otherwise the page's function, as it was
   MediaSource.isTypeSupported = (t) => {
     const s = cur();
-    return s && s.block.some((b) => t.includes(b)) ? false : isSupported(t);
+    if (!s) return isSupported(t);
+    return s.block.some((b) => t.includes(b)) ? false : o.native(t);
   };
   const add = o.add;
   MediaSource.prototype.addSourceBuffer = function (mime) {

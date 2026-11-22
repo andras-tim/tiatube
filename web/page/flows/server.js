@@ -162,7 +162,7 @@ const poll = async (c) => {
   const [kind, name] = Object.entries(s.files || {})[0] || [];
   cur = null;
   c.resolve({ job: st.job, kind, name, complete: s.complete, audio: s.audio, video: s.video,
-    href: `api/file?job=${st.job}&f=${kind}` });
+    href: `api/file?job=${st.job}&f=${kind}`, formats: c.end?.formats });
 };
 
 // ---- the flows ----
@@ -194,8 +194,27 @@ const startOne = async (item) => {
   st.done = true;
   $('run-actions').hidden = true;
   render();
+  const formats = quality(r.formats, st.opts.what === 'video');
+  $('formats').replaceChildren(...formats);
+  $('formats').hidden = !formats.length;
   result([el('span', r.complete ? 'ok' : 'bad', r.complete ? 'Kész, teljes.'
-    : `Kész, de HIÁNYOS: ${JSON.stringify({ hang: r.audio, kép: r.video })}`), ...(r.name ? downloaded(r.name, r.href) : [])]);
+    : `Kész, de HIÁNYOS: ${JSON.stringify({ hang: r.audio, kép: r.video })}`),
+  ...(r.name ? downloaded(r.name, r.href) : [])]);
+};
+
+// what the site gave, in a box of its own above the result: the audio (and video) tracks that were saved, and a warning
+// when a better audio track was offered
+const CODECS = { opus: 'Opus', mp4a: 'AAC', av01: 'AV1', vp09: 'VP9', vp9: 'VP9', avc1: 'H.264' };
+const quality = (f, video) => {
+  const a = f?.got?.audio;
+  if (!a) return [];
+  const name = (x) => `${CODECS[x.codec] || x.codec} ${x.kbps} kbps`;
+  const v = f.got.video;
+  const line = `Hang: ${name(a)}${video && v ? ` · kép: ${CODECS[v.codec] || v.codec} ${v.label}` : ''}`;
+  // the bookmarklet ranks the tracks, an other itag than its best one is a worse one
+  const best = f.best && f.best.itag !== a.itag
+    ? el('span', 'bad', `A legjobb elérhető hang ${name(f.best)} lett volna.`) : null;
+  return [el('span', '', best ? line : `${line}, a legjobb elérhető.`), ...(best ? [best] : [])];
 };
 
 const STAGE = { connect: 'indítás', capture: 'rögzítés', upload: 'feltöltés', build: 'összerakás', encode: 'kódolás' };

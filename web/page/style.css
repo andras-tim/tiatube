@@ -47,7 +47,7 @@ form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 .bar > i { display: block; height: 100%; background: var(--c); }
 .subline { display: flex; justify-content: space-between; gap: 8px; }
 .count { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.status { font-size: 13px; color: var(--muted); }
+.status { font-size: 12px; color: var(--muted); }
 .status.bad { color: var(--bad); }
 .bmnote { margin-top: 8px; font-size: 11px; color: var(--muted); text-align: right; }
 
@@ -57,6 +57,8 @@ form { display: flex; flex-direction: column; gap: 10px; flex: 1; margin: 0; }
 .result .ok { color: var(--ok); font-weight: 700; }
 .result .bad { color: var(--bad); font-weight: 700; }
 .result .retry { font-size: 12px; color: var(--muted); }
+#formats { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+#formats .bad { color: var(--bad); font-weight: 700; }
 .result .retry a { color: var(--muted); font-weight: 400; }
 /* tiaWeb: the videos of the page */
 .vlist { display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; }
