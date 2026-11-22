@@ -16,6 +16,10 @@ export const fail = (err, byUser = false) => {
   $('run-actions').hidden = true;
   const cur = st.steps.find((x) => x.state === 'now') || st.steps.find((x) => x.state === 'todo');
   if (cur) step(cur.key, 'err', { err: String(err.message || err) });
+  // the other running steps (an upload next to the capture) stop too, no spinner is left
+  for (const s of st.steps) {
+    if (s.state === 'now') Object.assign(s, { state: 'todo', t0: 0, sub: null });
+  }
   st.done = true;
   render();
   result([el('span', 'bad', LOST[st.mode] || 'A fájl nem készült el.'), ...(byUser ? [] : [' ', ...advice()])]);
