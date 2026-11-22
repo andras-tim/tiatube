@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased][unreleased]
 
 
+## [3.1.1] - 2026-11-23
+### Fixed
+- A Facebook video without a title in the page's data was named after the browser tab ("Videó"); it is named after
+  the text shown under it now (bookmarklet 2: a v1 bookmarklet gets the note about the newer one)
+
+
 ## [3.1.0] - 2026-11-22
 ### Added
 - Numbered bookmarklets: the install page names the button "tiaTube v1", the window shows which one opened it and
@@ -91,7 +97,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Getting thumbnail for ID3 album art
 - Session based download cache
 
-[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.1.0...HEAD
+[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/andras-tim/tiatube/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/andras-tim/tiatube/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/andras-tim/tiatube/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/andras-tim/tiatube/compare/v2.1.0...v3.0.0
