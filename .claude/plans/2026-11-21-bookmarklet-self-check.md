@@ -76,3 +76,5 @@ old.
   after fixes: the last part of a non-cached 4K capture was lost (the capture ended before the last appends), the best
   audio ranked by bitrate only, a portrait video read as 1280p, raw JSON for an incomplete file, a spinner left after a
   cancel, two boxes on the page. Open: a Facebook video without a title is named "Videó".
+- 2026-11-22: the Facebook video name fixed (the text shown under the video), bookmarklet 2; smoke test items 1, 2,
+  4, 10 and 21 passed.
