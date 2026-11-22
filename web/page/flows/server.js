@@ -198,8 +198,24 @@ const startOne = async (item) => {
   $('formats').replaceChildren(...formats);
   $('formats').hidden = !formats.length;
   result([el('span', r.complete ? 'ok' : 'bad', r.complete ? 'Kész, teljes.'
-    : `Kész, de HIÁNYOS: ${JSON.stringify({ hang: r.audio, kép: r.video })}`),
+    : `Kész, de HIÁNYOS: ${missing(r, item.duration)}.`),
   ...(r.name ? downloaded(r.name, r.href) : [])]);
+};
+
+// what an incomplete file lacks, per track, from the server's report (as the server decides complete)
+const missing = (r, dur) => {
+  const out = [];
+  for (const [name, t] of [['a hang', r.audio], ['a kép', r.video]]) {
+    if (!t) continue;
+    const end = t.last + t.step;
+    if (!t.frags) out.push(`${name} hiányzik`);
+    else if (t.gaps) out.push(`${name} ${t.gaps} helyen megszakad`);
+    else if (t.first >= 1) out.push(`${name} eleje hiányzik (${Math.round(t.first)} mp)`);
+    else if (dur && t.last + t.step * 1.5 < dur - 1) {
+      out.push(`${name} ${Math.floor(end)} mp-ig ér a ${Math.round(dur)}-ből`);
+    }
+  }
+  return out.join(', ') || 'egy része hiányzik';
 };
 
 // what the site gave, in a box of its own above the result: the audio (and video) tracks that were saved, and a warning
