@@ -72,3 +72,7 @@ old.
   collected part count right of the capture bar.
 - 2026-11-22: the audio question became a decision of the v3 plan (best quality the user's session offers, see its
   Decisions).
+- 2026-11-22: the smoke test run end to end behind a path (`/tiatube`, nginx in front of `make run-test`), every item passed
+  after fixes: the last part of a non-cached 4K capture was lost (the capture ended before the last appends), the best
+  audio ranked by bitrate only, a portrait video read as 1280p, raw JSON for an incomplete file, a spinner left after a
+  cancel, two boxes on the page. Open: a Facebook video without a title is named "Videó".
