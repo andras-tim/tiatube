@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>tiaTube</title>
-<meta name="tt-version" content="__TT_VERSION__">
 <link rel="icon" type="image/svg+xml" href="assets/logos/tiatube.svg">
 <script>/*HEAD*/</script>
 <style>/*CSS*/</style>
@@ -21,7 +20,7 @@
 </svg>
 <div class="win">
   <div class="nav"><div class="vt" id="title">Várakozás a videó fülére...</div><div class="meta" id="meta"></div></div>
-  <svg class="logo" viewBox="0 0 100 100" role="img" aria-label="tiaTube"><use id="logo"/></svg>
+  <a href="./" target="_blank" title="A tiaTube oldala"><svg class="logo" viewBox="0 0 100 100" role="img" aria-label="tiaTube"><use id="logo"/></svg></a>
   <div class="body">
     <div class="warn" id="update" hidden></div>
     <form id="opts" hidden>
@@ -49,8 +48,10 @@
     <div class="warn" id="warn" hidden></div>
     <ul class="steps" id="steps" hidden></ul>
     <div class="status" id="total"></div>
+    <div class="warn" id="formats" hidden></div>
     <div class="result" id="result" hidden></div>
     <div class="actions" id="run-actions" hidden><button class="btn quiet" id="cancel" type="button">Mégse</button></div>
+    <div class="bmnote" id="bm" hidden></div>
   </div>
 </div>
 <script>/*SCRIPT*/</script>

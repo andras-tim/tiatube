@@ -6,7 +6,7 @@ VERSION ?= $(or $(shell git describe --tags --abbrev=0 2>/dev/null | cut -d. -f1
 PORT ?= 8765
 DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build
 
-.PHONY: all assets check-assets web test image push run run-test stop clean ci
+.PHONY: all assets check-assets web check-bookmarklet test image push run run-test stop clean ci
 
 all: image
 
@@ -23,6 +23,18 @@ check-assets:
 ## web: the bundled web files into dist/web (the server embeds them; this target is for looking at them)
 web:
 	$(DOCKER_BUILD) --target web-out --output type=local,dest=dist/web .
+
+## check-bookmarklet: fails when the bookmarklet's build changed without a new number (BOOKMARKLET in
+## web/shared/protocol.js): the last line of web/bookmarklet/builds.txt must be the number and the build
+check-bookmarklet: web
+	@n=$$(sed -n 's/^export const BOOKMARKLET = \([0-9][0-9]*\);$$/\1/p' web/shared/protocol.js); \
+	b=$$(sha256sum dist/web/bookmarklet.js | cut -c1-8); \
+	last=$$(tail -n 1 web/bookmarklet/builds.txt); \
+	if [ "$$last" != "$$n $$b" ] || [ "$$(grep -c "^$$n " web/bookmarklet/builds.txt)" != 1 ]; then \
+	  echo "check-bookmarklet: the build is $$b under number $$n, web/bookmarklet/builds.txt ends with '$$last'"; \
+	  echo "a changed bookmarklet: raise BOOKMARKLET, make web, then add the line '<number> <build>'"; \
+	  exit 1; \
+	fi
 
 ## test: gofmt, go vet and the Go tests (with ffmpeg)
 test:
@@ -49,7 +61,7 @@ stop:
 	docker stop tiatube-dev
 
 ## ci: what the CI runs
-ci: check-assets test image
+ci: check-assets check-bookmarklet test image
 
 clean:
 	rm -rf dist

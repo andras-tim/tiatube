@@ -1,13 +1,33 @@
 // tiaWeb: the base of every site. It opens the tiaTube window, talks to it, shows a small status on the page, and
 // saves the HTML5 videos of any page: a plain video file streams from the site straight into the window's file.
 // A site class overrides find(), found(), hello() and start(), and the hooks below, nothing else.
-import { CHUNK_SIZE, INFLIGHT_MAX, MSG, PROTOCOL, WINDOW } from '../../shared/protocol.js';
+import { BOOKMARKLET, CHUNK_SIZE, INFLIGHT_MAX, MSG, PROTOCOL, WINDOW } from '../../shared/protocol.js';
 import { concat } from '../../shared/bytes.js';
 
-// for the window's check: this bookmarklet's build (the server puts it in place of __TT_VERSION__) and protocol
-const VERSION = `v=__TT_VERSION__&p=${PROTOCOL}`;
+// for the window's check: this bookmarklet's number and protocol
+const VERSION = `n=${BOOKMARKLET}&p=${PROTOCOL}`;
+// the window has this long to get its first answer, or the page's box tells that it does not work
+const ANSWER_MS = 10000;
+const BOX = 'position:fixed;top:12px;right:12px;z-index:2147483647;background:#222;color:#fff;'
+  + 'font:14px/1.4 sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 8px #0008;max-width:420px';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The page's box when the bookmarklet does not work: the error and the way to a new bookmarklet. A dragged bookmarklet
+// never changes, a new one may already handle what broke this one. A click outside the link closes the box.
+export function trouble(origin, err, box) {
+  console.error('tiaTube', err);
+  const ui = box || document.createElement('div');
+  ui.style.cssText = BOX;
+  const a = document.createElement('a');
+  a.href = `${origin}/`;
+  a.target = '_blank';
+  a.textContent = 'hozz létre újat a tiaTube oldalán';
+  a.style.cssText = 'color:#8cf;text-decoration:underline';
+  ui.replaceChildren(`tiaTube: nem működik (${err?.message || err}). Lehet, hogy elavult a könyvjelződ: `, a, '.');
+  ui.onclick = (ev) => { if (ev.target !== a) ui.remove(); };
+  if (!ui.isConnected) document.body.appendChild(ui);
+}
 const ALERT = 'tiaTube: engedélyezd a felugró ablakot ezen az oldalon';
 
 export class TiaWeb {
@@ -116,11 +136,15 @@ export class TiaWeb {
     window.__tiatube?.stop();
     window.__tiatube = this;
     this.ui = document.createElement('div');
-    this.ui.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147483647;background:#222;color:#fff;'
-      + 'font:14px/1.4 sans-serif;padding:8px 12px;border-radius:8px;box-shadow:0 2px 8px #0008';
+    this.ui.style.cssText = BOX;
     document.body.appendChild(this.ui);
     this.onMessage = (ev) => this.message(ev);
     window.addEventListener('message', this.onMessage);
+    // no answer to the window in time: this bookmarklet cannot talk to it (a closed window is the user's choice)
+    this.answered = false;
+    this.watch = setTimeout(() => {
+      if (!this.answered && !this.w.closed) this.trouble(new Error('nem tud szólni a tiaTube ablakkal'));
+    }, ANSWER_MS);
     this.prepare();
     this.show('válassz a tiaTube ablakban');
   }
@@ -128,8 +152,11 @@ export class TiaWeb {
   // after the window opened: the work that may run while the user chooses
   prepare() { this.media.videos.forEach((v) => this.probe(v)); }
 
+  trouble(err) { trouble(this.TT, err, this.ui); }
+
   stop() {
     clearInterval(this.timer);
+    clearTimeout(this.watch);
     this.ui?.remove();
     window.removeEventListener('message', this.onMessage);
     this.cancelled = true;
@@ -137,9 +164,18 @@ export class TiaWeb {
 
   message(ev) {
     if (ev.origin !== new URL(this.TT).origin || ev.source !== this.w) return;
-    const m = ev.data || {};
+    try {
+      this.handle(ev.data || {});
+    } catch (err) {
+      this.post({ type: MSG.ERROR, error: String(err.message || err) });
+      this.trouble(err);
+    }
+  }
+
+  handle(m) {
     if (m.type === MSG.READY) {
       this.post({ type: MSG.HELLO, ...this.hello() });
+      this.answered = true;
     } else if (m.type === MSG.ACK) {
       this.inflight -= m.bytes;
     } else if (m.type === MSG.CANCEL) {

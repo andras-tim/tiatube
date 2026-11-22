@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased][unreleased]
 
 
+## [3.1.0] - 2026-11-22
+### Added
+- Numbered bookmarklets: the install page names the button "tiaTube v1", the window shows which one opened it and
+  whether it is the latest, also on a page without a video
+- Self-check: the window tells when the bookmarklet does not answer, a run fails or stalls, and what to do (a new
+  bookmarklet or a reload); the bookmarklet shows a box with a link to a new one when it fails on the page
+- The best format the user's session offers, also when an extension (e.g. h264ify) hides codecs from the page; the
+  window shows which audio and video came, and warns when a better audio was offered
+- The fragment being collected and uploaded under the bars; the item in work in a playlist or a post
+- The window's logo opens the install page
+- A smoke test checklist for fixes and releases
+
+### Fixed
+- A second run on the same YouTube page, or on the next video without a reload, captured nothing
+- The last part of a capture could be lost when it was not cached (a 4K video)
+- An incomplete file told what it lacks as JSON; a spinner stayed after a cancel; two boxes on the page
+- The option picker used smaller text than the result
+
+
 ## [3.0.1] - 2026-11-20
 ### Fixed
 - The window waited for the video forever when the server is served under a path (`TIATUBE_ORIGIN` with a path):
@@ -72,7 +91,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Getting thumbnail for ID3 album art
 - Session based download cache
 
-[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.0.1...HEAD
+[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/andras-tim/tiatube/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/andras-tim/tiatube/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/andras-tim/tiatube/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/andras-tim/tiatube/compare/v2.0.0...v2.1.0

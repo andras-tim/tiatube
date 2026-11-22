@@ -26,7 +26,7 @@ let cur = null;
 
 // item: { videoId, title, author, url, thumbs, duration, ts }; view(stage, state, sub) shows the progress
 const runJob = (item, opts, name, view) => new Promise((resolve, reject) => {
-  cur = { item, view, resolve, reject, queue: [], active: 0, sentBytes: 0, end: null, finished: false };
+  cur = { item, view, resolve, reject, queue: [], active: 0, sentBytes: 0, parts: 0, sent: 0, capture: null, end: null, finished: false };
   st.end = null;
   st.finished = false;
   view('connect', 'now');
@@ -49,7 +49,10 @@ export const frag = (m) => {
   if (!cur) return;
   st.got++;
   st.gotBytes += m.buf.byteLength;
+  if (m.kind === 'frag') cur.parts++;
   cur.queue.push(m);
+  // every fragment moves the capture's count, the page's progress comes only twice a second
+  if (!cur.end && cur.capture) cur.view('capture', 'now', { ...cur.capture, count: `${cur.parts + 1}. töredék` });
   cur.view('upload', 'now');
   pump();
 };
@@ -57,7 +60,9 @@ export const frag = (m) => {
 export const progress = (m) => {
   if (!cur) return;
   cur.view('connect', 'ok');
-  cur.view('capture', 'now', { pct: m.pct, text: m.text });
+  // the fragment being collected, so the count starts at 1
+  cur.capture = { pct: m.pct, text: m.text };
+  cur.view('capture', 'now', { ...cur.capture, count: `${cur.parts + 1}. töredék` });
 };
 
 export const end = (m) => {
@@ -95,8 +100,11 @@ const pump = () => {
       c.active--;
       c.sentBytes += m.buf.byteLength;
       st.sentBytes += m.buf.byteLength;
+      if (m.kind === 'frag') c.sent++;
       sample('up', st.sentBytes);
-      c.view('upload', 'now', { text: `${(c.sentBytes / 1048576).toFixed(1)} MB${c.end ? '' : ' · lépést tart'}` });
+      // the fragment being uploaded, as the capture shows the one being collected
+      c.view('upload', 'now', { text: `${(c.sentBytes / 1048576).toFixed(1)} MB${c.end ? '' : ' · lépést tart'}`,
+        count: `${Math.min(c.sent + 1, Math.max(c.parts, 1))}. töredék` });
       page.send({ type: MSG.ACK, bytes: m.buf.byteLength });
       render();
       pump();
@@ -129,6 +137,7 @@ const poll = async (c) => {
     setTimeout(() => poll(c), 2000);
     return;
   }
+  st.alive = Date.now();
   if (s.state === 'error' || s.error) {
     c.reject(new Error(say(s.error || 'ismeretlen hiba')));
     return;
@@ -153,7 +162,7 @@ const poll = async (c) => {
   const [kind, name] = Object.entries(s.files || {})[0] || [];
   cur = null;
   c.resolve({ job: st.job, kind, name, complete: s.complete, audio: s.audio, video: s.video,
-    href: `api/file?job=${st.job}&f=${kind}` });
+    href: `api/file?job=${st.job}&f=${kind}`, formats: c.end?.formats });
 };
 
 // ---- the flows ----
@@ -185,8 +194,43 @@ const startOne = async (item) => {
   st.done = true;
   $('run-actions').hidden = true;
   render();
+  const formats = quality(r.formats, st.opts.what === 'video');
+  $('formats').replaceChildren(...formats);
+  $('formats').hidden = !formats.length;
   result([el('span', r.complete ? 'ok' : 'bad', r.complete ? 'Kész, teljes.'
-    : `Kész, de HIÁNYOS: ${JSON.stringify({ hang: r.audio, kép: r.video })}`), ...(r.name ? downloaded(r.name, r.href) : [])]);
+    : `Kész, de HIÁNYOS: ${missing(r, item.duration)}.`),
+  ...(r.name ? downloaded(r.name, r.href) : [])]);
+};
+
+// what an incomplete file lacks, per track, from the server's report (as the server decides complete)
+const missing = (r, dur) => {
+  const out = [];
+  for (const [name, t] of [['a hang', r.audio], ['a kép', r.video]]) {
+    if (!t) continue;
+    const end = t.last + t.step;
+    if (!t.frags) out.push(`${name} hiányzik`);
+    else if (t.gaps) out.push(`${name} ${t.gaps} helyen megszakad`);
+    else if (t.first >= 1) out.push(`${name} eleje hiányzik (${Math.round(t.first)} mp)`);
+    else if (dur && t.last + t.step * 1.5 < dur - 1) {
+      out.push(`${name} ${Math.floor(end)} mp-ig ér a ${Math.round(dur)}-ből`);
+    }
+  }
+  return out.join(', ') || 'egy része hiányzik';
+};
+
+// what the site gave, in a box of its own above the result: the audio (and video) tracks that were saved, and a warning
+// when a better audio track was offered
+const CODECS = { opus: 'Opus', mp4a: 'AAC', av01: 'AV1', vp09: 'VP9', vp9: 'VP9', avc1: 'H.264' };
+const quality = (f, video) => {
+  const a = f?.got?.audio;
+  if (!a) return [];
+  const name = (x) => `${CODECS[x.codec] || x.codec} ${x.kbps} kbps`;
+  const v = f.got.video;
+  const line = `Hang: ${name(a)}${video && v ? ` · kép: ${CODECS[v.codec] || v.codec} ${v.label}` : ''}`;
+  // the bookmarklet ranks the tracks, an other itag than its best one is a worse one
+  const best = f.best && f.best.itag !== a.itag
+    ? el('span', 'bad', `A legjobb elérhető hang ${name(f.best)} lett volna.`) : null;
+  return [el('span', '', best ? line : `${line}, a legjobb elérhető.`), ...(best ? [best] : [])];
 };
 
 const STAGE = { connect: 'indítás', capture: 'rögzítés', upload: 'feltöltés', build: 'összerakás', encode: 'kódolás' };
@@ -207,7 +251,8 @@ const startList = async (items) => {
   st.opts = opts;
   st.zip = new Zip(sink);
   const n = items.length, width = Math.max(2, String(n).length), failed = [];
-  st.steps = [STEP('items', `Videók (0 / ${n})`), STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés')];
+  // the counts name the item in work, not the ones done
+  st.steps = [STEP('items', `Videók (1 / ${n})`), STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés')];
   toRun([`${n} videó`, label('what'), label('format'), opts.what === 'video' && label('quality')]);
   $('run-actions').hidden = false;
   step('items', 'now');
@@ -216,11 +261,16 @@ const startList = async (items) => {
   for (let i = 0; i < n && !st.cancelled; i++) {
     const it = items[i], nn = String(pl.items.indexOf(it) + 1).padStart(width, '0');
     const head = `${i + 1} / ${n}: ${it.title}`;
+    step('items', 'now', { text: `Videók (${i + 1} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
     try {
       const r = await runJob({ videoId: it.id, title: it.title, url: `https://www.youtube.com/watch?v=${it.id}`,
         thumbs: it.thumbs, duration: it.dur, ts: it.id === info.videoId ? info.ts : 0 }, opts,
       safeName(`${nn} ${it.title} [${it.id}]`), (key, state, sub) => {
-        if (state === 'now') step('items', 'now', { sub: { pct: sub?.pct, text: `${head} · ${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}` } });
+        if (state === 'now') {
+          // the capture's own text names its stage already ("rögzítés 72%")
+          const what = key === 'capture' && sub?.text ? sub.text : `${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}`;
+          step('items', 'now', { sub: { pct: sub?.pct, count: sub?.count, text: `${head} · ${what}` } });
+        }
       });
       const data = new Uint8Array(await (await fetch(r.href)).arrayBuffer());
       await st.zip.add(r.name, data, Date.now() / 1000);
@@ -234,8 +284,8 @@ const startList = async (items) => {
       failed.push(`${it.title}: ${e.message}`);
     }
     st.job = null;
-    step('items', 'now', { text: `Videók (${i + 1} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
   }
+  step('items', 'now', { text: `Videók (${n} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
   if (st.cancelled) return;
   if (!done) {
     fail(new Error('egy videó sem készült el'));

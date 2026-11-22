@@ -251,6 +251,17 @@ In a real desktop Chrome, logged in where the site needs it:
   Facebook's CSP block a script loaded from another origin.
 - 2026-11-16, who may use a server: the API refuses cross-site POSTs (`http.CrossOriginProtection`); limiting the users
   is the reverse proxy's authentication, outside this repository.
+- 2026-11-22, quality (owner): the chosen content in the best quality the user's own session offers, within the chosen
+  format: MP3 and the original audio from the best audio track, whatever its codec; MKV the chosen resolution in the
+  player's best codec and the best audio; MP4 H.264 with the best AAC, copied (no video transcode, ever). Found while
+  measuring it in the owner's Chrome (2026-11-22):
+  - the h264ify extension answers `MediaSource.isTypeSupported` with '' for VP9, AV1 and Opus, so the player took H.264
+    and AAC 140 at every level and the top was 1080p; the same function of a fresh iframe is untouched;
+  - with that function the player took AV1 + Opus 251 at 144p and 1080p, VP9 + Opus 251 at 4K, on two videos; with
+    the MP4 block list H.264 + AAC 140;
+  - a false answer for `mp4a` or `avc1` does not steer the player to Opus or VP9: it drops MSE and plays the muxed 360p
+    itag 18, which cannot be captured; so the capture answers from the untouched function and blocks codecs only for
+    MP4, the player's own choice is the best one.
 
 ## Open questions
 
