@@ -235,7 +235,8 @@ const startList = async (items) => {
   st.opts = opts;
   st.zip = new Zip(sink);
   const n = items.length, width = Math.max(2, String(n).length), failed = [];
-  st.steps = [STEP('items', `Videók (0 / ${n})`), STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés')];
+  // the counts name the item in work, not the ones done
+  st.steps = [STEP('items', `Videók (1 / ${n})`), STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés')];
   toRun([`${n} videó`, label('what'), label('format'), opts.what === 'video' && label('quality')]);
   $('run-actions').hidden = false;
   step('items', 'now');
@@ -244,13 +245,15 @@ const startList = async (items) => {
   for (let i = 0; i < n && !st.cancelled; i++) {
     const it = items[i], nn = String(pl.items.indexOf(it) + 1).padStart(width, '0');
     const head = `${i + 1} / ${n}: ${it.title}`;
+    step('items', 'now', { text: `Videók (${i + 1} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
     try {
       const r = await runJob({ videoId: it.id, title: it.title, url: `https://www.youtube.com/watch?v=${it.id}`,
         thumbs: it.thumbs, duration: it.dur, ts: it.id === info.videoId ? info.ts : 0 }, opts,
       safeName(`${nn} ${it.title} [${it.id}]`), (key, state, sub) => {
         if (state === 'now') {
-          step('items', 'now', { sub: { pct: sub?.pct, count: sub?.count,
-            text: `${head} · ${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}` } });
+          // the capture's own text names its stage already ("rögzítés 72%")
+          const what = key === 'capture' && sub?.text ? sub.text : `${STAGE[key]}${sub?.text ? ` ${sub.text}` : ''}`;
+          step('items', 'now', { sub: { pct: sub?.pct, count: sub?.count, text: `${head} · ${what}` } });
         }
       });
       const data = new Uint8Array(await (await fetch(r.href)).arrayBuffer());
@@ -265,8 +268,8 @@ const startList = async (items) => {
       failed.push(`${it.title}: ${e.message}`);
     }
     st.job = null;
-    step('items', 'now', { text: `Videók (${i + 1} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
   }
+  step('items', 'now', { text: `Videók (${n} / ${n}${failed.length ? `, gond: ${failed.length}` : ''})` });
   if (st.cancelled) return;
   if (!done) {
     fail(new Error('egy videó sem készült el'));

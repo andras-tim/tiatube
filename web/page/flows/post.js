@@ -51,8 +51,9 @@ export const start = async () => {
     have: { photo: 0, video: 0 } };
   st.steps = [STEP('collect', `Elemek összegyűjtése (${it.photo + it.video})`)];
   if (sink.kind === 'file') st.steps.push(STEP('where', `Mentés helye: ${sink.name}`));
-  if (photos) st.steps.push(STEP('photos', `Képek (0 / ${photos})`));
-  if (videos) st.steps.push(STEP('videos', `Videók (0 / ${videos})`));
+  // the counts name the item in work, not the ones done
+  if (photos) st.steps.push(STEP('photos', `Képek (1 / ${photos})`));
+  if (videos) st.steps.push(STEP('videos', `Videók (1 / ${videos})`));
   st.steps.push(STEP('close', sink.kind === 'file' ? 'ZIP lezárása' : 'ZIP lezárása, letöltés'));
   step('collect', 'ok');
   step('where', 'ok');
@@ -72,7 +73,8 @@ export const progress = (m) => {
 const countItem = (kind) => {
   const p = st.post, n = ++p.have[kind], all = p.want[kind], failed = p.failed.filter((f) => f.kind === kind).length;
   const key = kind === 'photo' ? 'photos' : 'videos';
-  const text = `${kind === 'photo' ? 'Képek' : 'Videók'} (${n} / ${all}${failed ? `, kimaradt: ${failed}` : ''})`;
+  const at = Math.min(n + 1, all);
+  const text = `${kind === 'photo' ? 'Képek' : 'Videók'} (${at} / ${all}${failed ? `, kimaradt: ${failed}` : ''})`;
   step(key, n >= all ? 'ok' : 'now', { text });
 };
 
