@@ -70,5 +70,5 @@ old.
   links), a failure before the window (the box, no popup), a full MP3. Found on the way and fixed: a second run on the
   same YouTube page captured nothing (the hooks knew only the first run's class). Added at the owner's request: the
   collected part count right of the capture bar.
-- Open: in audio mode YouTube gave itag 140 (AAC ~131 kbps) next to the 144p video; the best one offered was 251 (Opus
-  ~155 kbps). Steering to Opus (block `mp4a` in audio mode) waits for the owner.
+- 2026-11-22: the audio question became a decision of the v3 plan (best quality the user's session offers, see its
+  Decisions).
