@@ -1,7 +1,7 @@
 // tiaTube: YouTube. Hooks Media Source Extensions, reloads the video from 0 and plays it fast and muted; every
 // complete fragment the player appends goes to the window, the server builds the file.
 import { MSG } from '../../shared/protocol.js';
-import { TiaWeb } from '../core/tiaweb.js';
+import { TiaWeb, sleep } from '../core/tiaweb.js';
 import { feed, splitter, track } from '../core/capture.js';
 
 const RATE = 16;
@@ -122,8 +122,16 @@ export class TiaTube extends TiaWeb {
   async finish() {
     this.done = true;
     clearInterval(this.timer);
+    // the buffered range reaches the end while the player may still append the rest of the last part (a part comes in
+    // several appends when it is not cached): wait for the started parts while appends keep coming, at most 8 s
+    const t0 = Date.now();
+    for (;;) {
+      await Promise.all(this.bufs.map((b) => b.chain));
+      const open = this.bufs.some((b) => b.split.pending() && Date.now() - (b.lastAppend || 0) < 1500);
+      if (!open || Date.now() - t0 > 8000) break;
+      await sleep(100);
+    }
     this.restore();
-    await Promise.all(this.bufs.map((b) => b.chain));
     const ms = {};
     for (const b of this.bufs) ms[b.msId] = b.msDur;
     this.capturing = false;
@@ -240,6 +248,7 @@ function hook() {
   SourceBuffer.prototype.appendBuffer = function (d) {
     const e = this.__tt;
     if (e && e.owner === cur()) {
+      e.lastAppend = Date.now();
       const u8 = ArrayBuffer.isView(d) ? new Uint8Array(d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength))
         : new Uint8Array(d.slice(0));
       e.chain = e.chain.then(() => feed(e.owner, e, u8)).catch((err) => console.error('tiaTube', err));

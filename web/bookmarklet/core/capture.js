@@ -57,7 +57,7 @@ const SEG_UNKNOWN = new Uint8Array([0x18, 0x53, 0x80, 0x67, 0x01, 0xFF, 0xFF, 0x
 export function splitter(isMp4) {
   let pend = new Uint8Array(0);
   let initParts = [], moof = null, head = null, info = null;
-  return (u8) => {
+  const split = (u8) => {
     pend = pend.length ? concat([pend, u8]) : u8;
     const out = [];
     let i = 0;
@@ -113,6 +113,9 @@ export function splitter(isMp4) {
     pend = pend.slice(i);
     return out;
   };
+  // the bytes of a unit that is not complete yet
+  split.pending = () => pend.length;
+  return split;
 }
 
 // the key of a format: the start of its init segment's hash, the server checks it
