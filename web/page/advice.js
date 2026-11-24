@@ -3,10 +3,12 @@
 import { st } from './state.js';
 import { el } from './ui.js';
 
+// the install page in a new tab; this window closes, the user goes to replace its bookmarklet (a running save keeps it)
 export const installLink = (text) => {
   const a = el('a', null, text);
   a.href = './';
   a.target = '_blank';
+  a.addEventListener('click', () => { if (!st.mode || st.done) setTimeout(() => window.close()); });
   return a;
 };
 
