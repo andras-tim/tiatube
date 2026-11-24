@@ -2,3 +2,4 @@
 # the current one last; checked by make check-bookmarklet
 1 ee516a45
 2 da04fc96
+3 a3e79144

@@ -25,8 +25,17 @@ export class TiaFace extends TiaWeb {
   windowUrl() { return `${super.windowUrl()}${this.media.post ? '&k=post' : ''}`; }
 
   prepare() {
-    const post = this.media.post;
+    const { video, post } = this.media;
     if (post) postItems(post).then((items) => { this.items = items; }, () => { this.items = []; });
+    // the window keeps asking until the levels are there
+    if (video && !video.reps) this.ready = getDoc(video.url).then((doc) => {
+      const r = readVideo(doc, video.id);
+      if (!r.reps || !r.dur) throw new Error('a videó adatai nincsenek a Facebook oldalán');
+      this.media.video = named(r);
+    }).catch((err) => {
+      const tell = () => (this.answered ? this.post({ type: MSG.ERROR, error: err.message }) : setTimeout(tell, 300));
+      tell();
+    });
   }
 
   hello() {
@@ -46,7 +55,8 @@ export class TiaFace extends TiaWeb {
   // ---- a video: the best audio track and the chosen video level ----
 
   videoReps() {
-    return this.media.video.reps.filter((r) => r.mime_type.startsWith('video/')).sort((a, b) => b.bandwidth - a.bandwidth);
+    return (this.media.video.reps || []).filter((r) => r.mime_type.startsWith('video/'))
+      .sort((a, b) => b.bandwidth - a.bandwidth);
   }
 
   // the best bandwidth of the chosen level, or of the best level below it
@@ -56,8 +66,10 @@ export class TiaFace extends TiaWeb {
   }
 
   async startVideo(opts) {
+    await this.ready;
     const video = this.media.video;
     try {
+      if (!video.reps) throw new Error('nincs videó');
       const tracks = [['audio', video.reps.filter((r) => r.mime_type.startsWith('audio/'))
         .sort((a, b) => b.bandwidth - a.bandwidth)[0]]];
       if (opts.what === 'video') tracks.unshift(['video', this.pick(opts.quality)]);
@@ -173,11 +185,17 @@ const GENERIC = /^(facebook|vide[oó]k?|videos?|watch|reels?)$/i;
 const shownText = (author) => [...document.querySelectorAll('[role="main"] span[dir="auto"]')]
   .map((s) => s.textContent.trim()).find((t) => t.length > 15 && !(author && t.startsWith(author))) || '';
 
-// the video of the URL, from the page's JSON (a video reached by in-page navigation is not there: reload)
+// the video of the URL, from the page's JSON; a video reached by in-page navigation (a reel scrolled to) is not there:
+// it comes back without tracks (reps), and prepare() reads them from the URL's own page
 function findVideo() {
   const m = location.href.match(/[?&]v=(\d+)/) || location.pathname.match(/\/(?:videos|reel|watch)\/(?:[^/]+\/)*?(\d{6,})/);
   if (!m) return null;
-  const id = m[1];
+  const r = readVideo(document, m[1]);
+  if (!r.reps || !r.dur) r.reps = null;
+  return named(r);
+}
+
+function readVideo(doc, id) {
   const r = { id, reps: null, dur: 0, title: '', caption: '', thumb: '', author: '', url: location.href, ts: 0, storyTs: 0 };
   const walk = (o, d) => {
     if (!o || typeof o !== 'object' || d > 80) return;
@@ -197,11 +215,14 @@ function findVideo() {
     }
     for (const k in o) walk(o[k], d + 1);
   };
-  for (const s of document.querySelectorAll('script[type="application/json"]')) {
+  for (const s of doc.querySelectorAll('script[type="application/json"]')) {
     if (!s.textContent.includes(id)) continue;
     try { walk(JSON.parse(s.textContent), 0); } catch (e) { /* not JSON */ }
   }
-  if (!r.reps || !r.dur) return null;
+  return r;
+}
+
+function named(r) {
   // a watch page's JSON has neither title nor text: the text shown under the player, then the tab's title unless it is
   // only the section's name ("Videó | Facebook")
   const page = document.title.replace(/^\(\d+\)\s*/, '').replace(/\s*\|\s*Facebook$/, '');
