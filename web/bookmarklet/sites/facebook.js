@@ -26,7 +26,7 @@ export class TiaFace extends TiaWeb {
 
   prepare() {
     const { video, post } = this.media;
-    if (post) postItems(post).then((items) => { this.items = items; }, () => { this.items = []; });
+    if (post) loadPost(post).then((items) => { this.items = items; }, () => { this.items = []; });
     // the window keeps asking until the levels are there
     if (video && !video.reps) this.ready = getDoc(video.url).then((doc) => {
       const r = readVideo(doc, video.id);
@@ -123,7 +123,8 @@ export class TiaFace extends TiaWeb {
     const list = all.filter((x) => opts.what === 'all' || x.kind === opts.what);
     let failed = 0;
     // the next item's page is read while the current one downloads
-    const info = (x) => (x.kind === 'photo' ? photoInfo(post, x.id) : videoInfo(x.id, opts.vq)).catch((e) => ({ error: e }));
+    const info = (x) => (x.kind === 'photo' ? photoInfo(photoPage(post, x.id), x.id) : videoInfo(x.id, opts.vq))
+      .catch((e) => ({ error: e }));
     let next = list.length ? info(list[0]) : null;
     for (let i = 0; i < list.length; i++) {
       const x = list[i], n = list.length, label = x.kind === 'photo' ? 'kép' : 'videó';
@@ -233,32 +234,90 @@ function named(r) {
   return r;
 }
 
-// the post of the URL: its text, time, author and link from this page's JSON
+// the post of the URL: its text, time, author and link from this page's JSON. A photo opened from a post names the post
+// in its set (pcb. on a page or a profile, gm. in a group); a photo outside a post is taken alone. A post opened inside
+// the page (a photo clicked in the feed) is not in the page's JSON: prepare() reads it from the URL's own page, never
+// another post of this page.
 function findPost() {
-  const m = location.href.match(/[?&]multi_permalinks=(\d+)|\/(?:posts|permalink)\/(\d+)|[?&]story_fbid=(\d+)|set=pcb\.(\d+)/);
-  let id = m && (m[1] || m[2] || m[3] || m[4]);
-  const r = { id, text: '', ts: 0, author: '', url: location.href };
+  const page = location.href;
+  const photo = /^\/photo(\.php)?\/?$/.test(location.pathname) && location.search.match(/[?&]fbid=(\d+)/);
+  const fbid = photo ? photo[1] : '';
+  const m = page.match(/[?&]multi_permalinks=(\d+)|\/(?:posts|permalink)\/(\d+)|[?&]story_fbid=(\d+)|[?&]set=(?:pcb|gm)\.(\d+)/);
+  const id = m && (m[1] || m[2] || m[3] || m[4]);
+  if (fbid && !id) return titled({ id: fbid, photo: fbid, text: '', ts: 0, author: '', url: page, page });
+  const r = readPost(document, id, fbid);
+  return r.id ? titled({ ...r, url: r.url || page, fbid, page }) : null;
+}
+
+// the post from a page's JSON; without an id, the first post with attachments
+function readPost(doc, want, fbid) {
+  let id = want;
+  const r = { id, found: false, text: '', caption: '', ts: 0, author: '', url: '' }, stories = new Set();
+  const take = (o) => {
+    if (!r.text && o.message?.text) r.text = o.message.text;
+    if (!r.ts && o.creation_time) r.ts = o.creation_time;
+    if (!r.author && o.actors?.[0]?.name) r.author = o.actors[0].name;
+  };
   const hit = (o) => {
     if (!o.post_id || (id && o.post_id !== id)) return;
     if (!id && !o.attachments) return;
     id = r.id = o.post_id;
-    if (!r.text && o.message?.text) r.text = o.message.text;
-    if (!r.ts && o.creation_time) r.ts = o.creation_time;
-    if (!r.author && o.actors?.[0]?.name) r.author = o.actors[0].name;
+    r.found = true;
+    if (o.id) stories.add(o.id);
+    take(o);
     if (o.permalink_url) r.url = o.permalink_url;
+    else if (!r.url && typeof o.url === 'string') r.url = o.url;
   };
-  for (const s of document.querySelectorAll('script[type="application/json"]')) {
+  for (const s of doc.querySelectorAll('script[type="application/json"]')) {
     if (id && !s.textContent.includes(id)) continue;
     try { walkObj(JSON.parse(s.textContent), 0, hit); } catch (e) { /* not JSON */ }
   }
-  if (!r.id) return null;
-  const first = r.text.split('\n').map((l) => noTags(l).trim()).find(Boolean) || '';
-  r.title = (first || `${r.author || 'Facebook'} bejegyzése`).replace(/\s+/g, ' ').slice(0, 80);
+  // a photo's page keeps the time on objects of the post's story that do not name the post; the photo has a caption
+  if (r.found && (!r.ts || !r.text)) {
+    jsonWalk(doc, '', (j) => walkObj(j, 0, (o) => {
+      if (stories.has(o.id)) take(o);
+      else if (fbid && String(o.id) === fbid && !r.caption && o.message?.text) r.caption = o.message.text;
+    }));
+  }
   return r;
 }
 
-// the items in the post's order: the post's media set page, else the attachments on this page
-async function postItems(post) {
+function titled(r) {
+  const first = (r.text || r.caption || '').split('\n').map((l) => noTags(l).trim()).find(Boolean) || '';
+  r.title = (first || `${r.author || 'Facebook'} ${r.photo ? 'képe' : 'bejegyzése'}`).replace(/\s+/g, ' ').slice(0, 80);
+  return r;
+}
+
+// the post's data missing from this page, read from the URL's own page, then its items; a photo alone is its one item
+async function loadPost(post) {
+  if (post.photo) {
+    const p = await photoInfo(post.page, post.photo);
+    Object.assign(post, { text: p.text, ts: p.ts, author: p.author });
+    titled(post);
+    return [{ id: post.photo, kind: 'photo' }];
+  }
+  const merge = (r) => {
+    if (!r.found) return;
+    post.found = true;
+    for (const k of ['text', 'caption', 'ts', 'author']) post[k] = post[k] || r[k];
+    if (r.url) post.url = r.url;
+  };
+  let doc = document;
+  if (!post.found) merge(readPost(doc = await getDoc(post.page), post.id, post.fbid));
+  // a photo's page has no text of the post: the post's own page has it (about 3 s, while the items are read)
+  const text = (post.text || post.url === post.page) ? null
+    : getDoc(post.url).then((d) => merge(readPost(d, post.id)), () => {});
+  const items = await postItems(post, doc);
+  await text;
+  post.text = post.text || post.caption;
+  titled(post);
+  return items;
+}
+
+const photoPage = (post, id) => (post.photo ? post.page : `/photo/?fbid=${id}&set=pcb.${post.id}`);
+
+// the items in the post's order: the post's media set page, else the attachments on the post's page
+async function postItems(post, page) {
   const items = [], seen = new Set();
   const add = (o) => {
     if ((o.__typename === 'Photo' || o.__typename === 'Video') && o.id && !seen.has(o.id)) {
@@ -271,17 +330,17 @@ async function postItems(post) {
     jsonWalk(doc, '', (j) => walkObj(j, 0, add));
   } catch (e) { /* the fallback below */ }
   if (!items.length) {
-    jsonWalk(document, post.id, (j) => walkObj(j, 0, (o) => {
+    jsonWalk(page, post.id, (j) => walkObj(j, 0, (o) => {
       if (o.post_id === post.id && o.attachments) walkObj(o.attachments, 0, add);
     }));
   }
   return items;
 }
 
-// the full-size image, its upload time, alt text and owner from the photo's page
-async function photoInfo(post, id) {
-  const doc = await getDoc(`/photo/?fbid=${id}&set=pcb.${post.id}`);
-  const r = { url: '', w: 0, ts: 0, alt: '', author: '' };
+// the full-size image, its upload time, text, alt text and owner from the photo's page
+async function photoInfo(page, id) {
+  const doc = await getDoc(page);
+  const r = { url: '', w: 0, ts: 0, text: '', alt: '', author: '' };
   const inside = (o, d) => {
     if (!o || typeof o !== 'object' || d > 60) return;
     if (typeof o.uri === 'string' && o.width > r.w && /^https:/.test(o.uri)) {
@@ -293,6 +352,7 @@ async function photoInfo(post, id) {
   jsonWalk(doc, id, (j) => walkObj(j, 0, (o) => {
     if (String(o.id) !== id) return;
     if (!r.ts && o.created_time) r.ts = o.created_time;
+    if (!r.text && o.message?.text) r.text = o.message.text;
     if (!r.alt && o.accessibility_caption) r.alt = o.accessibility_caption;
     if (!r.author && o.owner?.name) r.author = o.owner.name;
     inside(o, 0);

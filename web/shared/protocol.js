@@ -23,7 +23,7 @@ export const PROTOCOL = 1;
 // The bookmarklet's number: raise it with every change of the bookmarklet's build (make check-bookmarklet fails until
 // web/bookmarklet/builds.txt has the new build under it). The install page names the button after it, the window tells
 // an older bookmarklet.
-export const BOOKMARKLET = 3;
+export const BOOKMARKLET = 4;
 // bytes on the way from the page to the window, not acknowledged yet
 export const INFLIGHT_MAX = 64 * 1048576;
 // one message of a file that streams to the window
