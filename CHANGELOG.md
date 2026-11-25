@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased][unreleased]
 
 
+## [3.1.2] - 2026-11-25
+### Fixed
+- A Facebook photo clicked in a feed saved the post behind it, with that post's text; it saves the clicked photo's own
+  post now, a group's post too, and a photo outside a post alone (bookmarklet 4)
+- A Facebook reel scrolled to in the reel viewer was taken for an unrelated post; it reads its own tracks now
+  (bookmarklet 3)
+
+### Changed
+- The link to the install page closes the window of an outdated bookmarklet, unless a save is running
+
+
 ## [3.1.1] - 2026-11-23
 ### Fixed
 - A Facebook video without a title in the page's data was named after the browser tab ("Videó"); it is named after
@@ -97,7 +108,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Getting thumbnail for ID3 album art
 - Session based download cache
 
-[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.1.1...HEAD
+[unreleased]: https://github.com/andras-tim/tiatube/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/andras-tim/tiatube/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/andras-tim/tiatube/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/andras-tim/tiatube/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/andras-tim/tiatube/compare/v3.0.0...v3.0.1

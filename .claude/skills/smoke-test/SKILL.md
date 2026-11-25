@@ -58,7 +58,8 @@ No video ids or pages of real people in this repository: pick them at run time.
 
 - YouTube: a short 4K video not opened before in this browser (not cached), a 1-2 minute video, a Short, a playlist of
   short items, a page with a related short video for a move without a reload.
-- Facebook: a public page's video, a reel, a post with a video and one with photos.
+- Facebook: a public page's video, a reel, a post with a video and one with photos, and photos clicked in a feed (not
+  a reload): one of a group's post, one of a page's post with several photos, one outside a post (`set=a.`).
 - videa.hu: a short video.
 - A page with a plain HTML5 `<video>`, and a page without a video.
 
@@ -90,6 +91,7 @@ No video ids or pages of real people in this repository: pick them at run time.
 | 20 | incomplete file (when one occurs; it cannot be forced) | "Kész, de HIÁNYOS:" with what is missing in words |
 | **Other sites** | | |
 | 21 | Facebook video, reel, post with a video, post with photos | complete; a ZIP for a post |
+| 21b | Facebook photo clicked in a feed: a group's post, a page's post, a photo outside a post | the clicked photo's post (its text, date, author), or the photo alone; the ZIP holds the clicked photo |
 | 22 | videa | the sizes, one download |
 | 23 | plain HTML5 video; page without a video | "Kész, teljes: <size>"; the info view |
 | **After a release** | | |
